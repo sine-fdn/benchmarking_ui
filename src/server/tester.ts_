@@ -1,0 +1,34 @@
+import { random, mod } from "jiff-mpc/lib/common/helpers.js";
+import { ZP } from "../mpc";
+
+export default function computeShares(
+  n: number,
+  numParties: number,
+  zP = ZP
+): number[] {
+  const randBits = Array.from({ length: numParties - 1 }, () =>
+    mod(random(zP), zP)
+  );
+
+  const summed = randBits.reduce((lhs, rhs) => mod(lhs + rhs, zP), 0);
+  const lastNumber = mod(n - summed, zP);
+
+  randBits.push(lastNumber);
+  return randBits;
+}
+
+for (let i = 0; i < ZP; ++i) {
+  const shares = computeShares(i, 2);
+  if (
+    mod(
+      shares.reduce((l, r) => l + r, 0),
+      ZP
+    ) === i
+  ) {
+    console.error("ooooh!");
+  }
+
+  if (i % 10000 === 0) console.log("success");
+}
+
+console.log("test 1");

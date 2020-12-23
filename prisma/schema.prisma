@@ -1,0 +1,84 @@
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+    // previewFeatures = ["nativeTypes"]
+}
+
+enum ComputationKind {
+    RANKING
+
+    @@map("computation_kind")
+}
+
+model BenchmarkingSession {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now()) @map("created_at")
+
+    title              String
+    numParties         Int               @map("num_parties")
+    inputTitles        String[]          @map("input_titles")
+    inputComputations  ComputationKind[] @map("input_computations")
+    processorHostnames String[]          @map("processor_hostnames")
+
+    submissions Submission[]
+    process     ProcessingQueue?
+    results     Result[]
+    @@map("benchmarking_sessions")
+}
+
+model Submission {
+    id        String    @id @default(cuid())
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+
+    session       BenchmarkingSession @relation(fields: [sessionId], references: [id])
+    sessionId     String              @map("session_id")
+    submitter     String
+    integerValues Int[]               @map("integer_values")
+
+    result Result?
+    @@map("submissions")
+}
+
+enum ProcessingStatus {
+    PENDING
+    PROCESSING
+    FINISHED
+    FINISHED_WITH_ERROR
+
+    @@map("processing_status")
+}
+
+model ProcessingQueue {
+    id        Int       @id @default(autoincrement())
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+
+    session   BenchmarkingSession @relation(fields: [sessionId], references: [id])
+    sessionId String              @unique @map("session_id")
+
+    status ProcessingStatus @default(PENDING)
+
+
+    @@index([status, createdAt])
+    @@map("processing_queue")
+}
+
+model Result {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now()) @map("created_at")
+
+    session      BenchmarkingSession @relation(fields: [sessionId], references: [id])
+    sessionId    String              @map("session_id")
+    submission   Submission          @relation(fields: [submissionId], references: [id])
+    submissionId String              @unique @map("submission_id")
+
+    integerResults Int[] @map("integer_results")
+
+    @@index([sessionId, submissionId])
+    @@map("results")
+}
