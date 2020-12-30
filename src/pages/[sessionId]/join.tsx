@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import NewSubmissionForm from "../../components/forms/NewSubmissionForm";
 import Layout from "../../components/Layout";
 import { NewBenchmarkingSubmission } from "../../interfaces";
-import ApiNewSession, {
+import ApiNewSubmission, {
   computeSubmission,
 } from "../../services/ApiNewSubmission.service";
 import prismaConnection from "../../utils/prismaConnection";
@@ -32,7 +32,7 @@ export default function JoinBenchmarkingSession({
 
   async function onSubmit(data: NewBenchmarkingSubmission) {
     try {
-      const res = await ApiNewSession(
+      const res = await ApiNewSubmission(
         computeSubmission(data, processorHostnames)
       );
       if (!res.success) {

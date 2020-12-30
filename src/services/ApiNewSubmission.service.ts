@@ -80,7 +80,7 @@ export function computeSubmission(
   };
 }
 
-export default async function ApiNewSession({
+export default async function ApiNewSubmission({
   processorHostnames,
   data,
 }: Submission): Promise<NewBenchmarkingSubmissionApiResponse> {
