@@ -1,13 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { BenchmarkingSession } from "@prisma/client";
-import Cors from "cors";
-
 import {
   GetSessionApiResponse,
-  GetSessionApiSuccessResponse,
   NewBenchmarkingSubmission,
-  NewBenchmarkingSubmissionApiResponse,
-} from "./../../../interfaces/index";
+  NewSubmissionApiResponse,
+} from "@sine-fdn/sine-ts";
+import Cors from "cors";
+
 import NewBenchmarkingSubmissionSchema from "../../../schemas/NewBenchmarkingSubmission.schema";
 import prismaConnection from "../../../utils/prismaConnection";
 import initMiddleware from "../../../utils/initMiddleware";
@@ -27,9 +26,7 @@ const UPSTREAM_HOSTS: string[] = (
 
 export default async function BenchmarkingSubmission(
   req: NextApiRequest,
-  res: NextApiResponse<
-    NewBenchmarkingSubmissionApiResponse | GetSessionApiResponse
-  >
+  res: NextApiResponse<NewSubmissionApiResponse | GetSessionApiResponse>
 ) {
   if (!(await cors(req, res))) return;
 
@@ -105,7 +102,7 @@ async function getSession(
 async function addSubmission(
   sessionId: string,
   req: NextApiRequest,
-  res: NextApiResponse<NewBenchmarkingSubmissionApiResponse>
+  res: NextApiResponse<NewSubmissionApiResponse>
 ) {
   const session = await sessionFetchLogic(sessionId);
   if (!session) {
@@ -181,14 +178,14 @@ async function sessionFetchLogic(
     return localSession;
   }
 
-  let session: GetSessionApiSuccessResponse | null = null;
+  let session: GetSessionApiResponse | null = null;
   console.log("Fetching session from upstream... ", UPSTREAM_HOSTS);
   for (const idx in UPSTREAM_HOSTS) {
     session = await fetchFromUpstream(UPSTREAM_HOSTS[idx], id);
     if (session) break;
   }
 
-  if (!session) return session;
+  if (!session || !session.success) return null;
 
   return await prismaConnection().benchmarkingSession.upsert({
     create: {
@@ -209,7 +206,7 @@ async function sessionFetchLogic(
 async function fetchFromUpstream(
   baseUrl: string,
   id: string
-): Promise<GetSessionApiSuccessResponse | null> {
+): Promise<GetSessionApiResponse | null> {
   try {
     const res = await fetch(`${baseUrl}/api/v1/${id}`);
     return await res.json(); // TODO

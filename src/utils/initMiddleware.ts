@@ -1,5 +1,5 @@
-import { ErrorApiResponse } from "./../interfaces/index";
 import { NextApiRequest, NextApiResponse } from "next";
+import { ErrorApiResponse } from "@sine-fdn/sine-ts";
 
 type Middleware<T> = (
   req: NextApiRequest,

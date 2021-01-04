@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import { NewSession } from "@sine-fdn/sine-ts";
 
 import Layout from "../components/Layout";
 import NewSessionForm from "../components/forms/NewSessionForm";
-import { NewSession } from "../interfaces";
 import ApiNewSession from "../services/ApiNewSession.service";
 import ErrorMessage from "../components/ErrorMessage";
 

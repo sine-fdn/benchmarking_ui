@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { BenchmarkingSession } from "@prisma/client";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
+import { BenchmarkingSession } from "@prisma/client";
+import { NewBenchmarkingSubmission } from "@sine-fdn/sine-ts";
 
 import NewSubmissionForm from "../../components/forms/NewSubmissionForm";
 import Layout from "../../components/Layout";
-import { NewBenchmarkingSubmission } from "../../interfaces";
 import ApiNewSubmission, {
   computeSubmission,
 } from "../../services/ApiNewSubmission.service";

@@ -1,11 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { ComputationKind, Prisma, ProcessingStatus, XOR } from "@prisma/client";
-
 import {
   NewSession,
   NewSessionApiResponse,
   SessionListingApiResponse,
-} from "../../../interfaces";
+} from "@sine-fdn/sine-ts";
+import { Prisma, ProcessingStatus, XOR } from "@prisma/client";
 import NewSessionSchema from "../../../schemas/NewSession.schema";
 import prismaConnection from "../../../utils/prismaConnection";
 
@@ -125,7 +124,10 @@ async function createSession(
   data: NewSession,
   processorHostnames: string[]
 ): Promise<string | undefined> {
-  const { title, numParties, valueTitle } = data;
+  const { title, numParties, input } = data;
+  const inputTitles = input.map((d) => d.title);
+  const inputComputations = input.map((d) => d.computation);
+
   try {
     const { id } = await prismaConnection().benchmarkingSession.create({
       select: {
@@ -134,8 +136,8 @@ async function createSession(
       data: {
         title,
         numParties,
-        inputTitles: [valueTitle],
-        inputComputations: [ComputationKind.RANKING],
+        inputTitles,
+        inputComputations,
         processorHostnames,
       },
     });

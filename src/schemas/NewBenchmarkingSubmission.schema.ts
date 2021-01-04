@@ -1,4 +1,4 @@
-import { NewBenchmarkingSubmission } from "./../interfaces/index";
+import { NewBenchmarkingSubmission } from "@sine-fdn/sine-ts";
 import * as Yup from "yup";
 
 export default function NewBenchmarkingSubmissionSchema(

@@ -1,36 +1,37 @@
 import useSWR, { responseInterface } from "swr";
 import {
-  SessionListingApiResponse,
+  Benchmarking,
   ErrorApiResponse,
   SessionListingApiSuccessResponse,
-} from "../interfaces";
+  ListSessionsOpts,
+} from "@sine-fdn/sine-ts";
 
 type SessionListingResponse = responseInterface<
   SessionListingApiSuccessResponse,
   ErrorApiResponse
 >;
 
-type ProcessStatus = "processing" | "finished" | undefined;
+type ProcessStatus = ListSessionsOpts["status"];
 
-async function fetcher(url: string): Promise<SessionListingApiSuccessResponse> {
-  return fetch(url)
-    .then((r) => r.json())
-    .catch((error) => ({
-      success: false,
-      message: `Failed to parse server response: ${error}`,
-    }))
-    .then((res: SessionListingApiResponse) =>
-      res.success ? Promise.resolve(res) : Promise.reject(res)
-    );
+async function fetcher(
+  _: string,
+  status: ProcessStatus
+): Promise<SessionListingApiSuccessResponse> {
+  const BenchmarkingService = new Benchmarking({
+    baseUrl: "", // connect with "this" Next.js instance
+    fetch: fetch.bind(window),
+  });
+
+  const res = await BenchmarkingService.listSessions({ status });
+  if (!res.success) return Promise.reject(res);
+  else return Promise.resolve(res);
 }
 
 export default function useSessionListing(
   status?: ProcessStatus,
   refreshInterval = 1500
 ): SessionListingResponse {
-  const url = "/api/v1";
-  const getUrl = status ? `${url}?status=${status}` : url;
-  return useSWR(getUrl, fetcher, {
+  return useSWR(["sessionListing", status], fetcher, {
     refreshInterval,
   });
 }

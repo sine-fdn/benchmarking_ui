@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import FormField from "../FormField";
-import { NewBenchmarkingSubmission } from "../../interfaces";
 import NewBenchmarkingSubmissionSchema from "../../schemas/NewBenchmarkingSubmission.schema";
+import { NewBenchmarkingSubmission } from "@sine-fdn/sine-ts";
 
 interface NewSubmissionFormProps {
   sessionId: string;

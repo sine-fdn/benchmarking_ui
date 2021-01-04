@@ -1,18 +1,21 @@
 import useSWR, { responseInterface } from "swr";
 import {
-  GetSessionApiResponse,
   ErrorApiResponse,
+  GetSessionApiResponse,
   GetSessionApiSuccessResponse,
-} from "../interfaces";
+} from "@sine-fdn/sine-ts";
+import BenchmarkingService from "./benchmarkingService";
 
 type SessionListingResponse = responseInterface<
   GetSessionApiSuccessResponse,
   ErrorApiResponse
 >;
 
-async function fetcher(url: string): Promise<GetSessionApiSuccessResponse> {
-  return fetch(url)
-    .then((r) => r.json())
+async function fetcher(
+  _: string,
+  sessionId: string
+): Promise<GetSessionApiSuccessResponse> {
+  return BenchmarkingService.getSession(sessionId)
     .catch((error) => ({
       success: false,
       message: `Failed to parse server response: ${error}`,
@@ -26,7 +29,7 @@ export default function useSession(
   sessionId: string,
   refreshInterval = 1000
 ): SessionListingResponse {
-  return useSWR(`/api/v1/${sessionId}`, fetcher, {
+  return useSWR(["session", sessionId], fetcher, {
     refreshInterval,
   });
 }
