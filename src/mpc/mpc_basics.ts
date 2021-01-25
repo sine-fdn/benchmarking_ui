@@ -41,6 +41,38 @@ export function remerge_secrets(
   return secret_values;
 }
 
+interface ShareSecretsResult {
+  datasetSecrets: SecretShare[];
+  referenceSecret: SecretShare;
+}
+
+export async function share_dataset_secrets(
+  jiff_instance: JIFFClient,
+  secrets: number[],
+  other_node_id: number
+): Promise<ShareSecretsResult> {
+  const all = await jiff_instance.share_array(secrets);
+  console.log("share datasets: ", all);
+  const datasetSecrets = Object.values(all).reduce(
+    (agg, secrets, idx) =>
+      idx !== other_node_id ? agg.concat(secrets) : secrets,
+    []
+  );
+  const referenceSecret =
+    typeof all[other_node_id] === "object" && all[other_node_id].length === 1
+      ? all[other_node_id][0]
+      : null;
+
+  if (!referenceSecret) {
+    throw new Error("other_node_id is missing from shared secrets");
+  }
+
+  return {
+    datasetSecrets,
+    referenceSecret,
+  };
+}
+
 export function sort(secrets_in: SecretShare[]): SecretShare[] {
   function oddEvenSort(a: SecretShare[], lo: number, n: number) {
     if (n > 1) {
@@ -89,16 +121,31 @@ export function ranking(
   secrets: SecretShare[]
 ): SecretShare[] {
   const ranks: (number | SecretShare)[] = Array.from(
-    { length: secrets_sorted.length },
+    { length: secrets.length },
     () => 0
   );
 
   for (let i = 0; i < secrets_sorted.length; i++) {
-    for (let j = 0; j < secrets_sorted.length; j++) {
+    for (let j = 0; j < secrets.length; j++) {
       const cmp = secrets_sorted[i].seq(secrets[j]);
       ranks[j] = cmp.if_else(i + 1, ranks[j]);
     }
   }
 
   return ranks as SecretShare[]; //TODO
+}
+
+export function ranking_const(
+  my_secret: SecretShare,
+  secrets_sorted: SecretShare[]
+): SecretShare {
+  // construct a "0" w/o resorting to a jiff_client
+  let result = my_secret.sub(my_secret);
+
+  for (let i = 0; i < secrets_sorted.length; ++i) {
+    const cmp = my_secret.sgt(secrets_sorted[i]);
+    result = result.add(cmp);
+  }
+
+  return result;
 }

@@ -15,7 +15,10 @@ declare type JIFFClientOptions = {
 declare class SecretShare {
   add(n: number | SecretShare): SecretShare;
   sadd(n: number | SecretShare): SecretShare;
+  sub(s: SecretShare | number): SecretShare;
+
   gt(n: number | SecretShare): SecretShare;
+  sgt(s: SecretShare): SecretShare;
   if_else(t: number | SecretShare, f: number | SecretShare): SecretShare;
   seq(s: SecretShare): SecretShare;
 }

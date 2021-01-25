@@ -19,6 +19,7 @@ model BenchmarkingSession {
     createdAt DateTime @default(now()) @map("created_at")
 
     title              String
+    datasetId          String?           @map("dataset_id")
     numParties         Int               @map("num_parties")
     inputTitles        String[]          @map("input_titles")
     inputComputations  ComputationKind[] @map("input_computations")
@@ -27,6 +28,8 @@ model BenchmarkingSession {
     submissions Submission[]
     process     ProcessingQueue?
     results     Result[]
+    dataset     Dataset?         @relation(fields: [datasetId], references: [id])
+
     @@map("benchmarking_sessions")
 }
 
@@ -42,6 +45,27 @@ model Submission {
 
     result Result?
     @@map("submissions")
+}
+
+model Dataset {
+    id                  String                @id @default(cuid())
+    createdAt           DateTime              @default(now()) @map("created_at")
+    BenchmarkingSession BenchmarkingSession[]
+    dimensions          DatasetDimension[]
+
+    @@map("datasets")
+}
+
+model DatasetDimension {
+    datasetId     String   @map("dataset_id")
+    name          String
+    createdAt     DateTime @default(now()) @map("created_at")
+    integerValues Int[]    @map("integer_values")
+
+    dataset Dataset @relation(fields: [datasetId], references: [id])
+
+    @@unique([datasetId, name])
+    @@map("dataset_dimensions")
 }
 
 enum ProcessingStatus {

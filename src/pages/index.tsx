@@ -1,6 +1,7 @@
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React from "react";
+
 import ErrorMessage from "../components/ErrorMessage";
 import Layout from "../components/Layout";
 import NotificationMessage from "../components/NotificationMessage";
@@ -19,7 +20,7 @@ const IndexPage = () => {
 
   return (
     <Layout title="SINE Benchmarking UI">
-      <div className="container content mt-6 mb-6">
+      <div className="container content mb-6">
         {maybeSubmission && (
           <div className="block">
             <NotificationMessage>
@@ -35,14 +36,7 @@ const IndexPage = () => {
           </div>
         )}
         <div className="block">
-          <div className="is-flex-tablet is-justify-content-space-between">
-            <h1 className="title is-2">Hello Shiny new Benchmarking World</h1>
-            <Link href="/new">
-              <a className="button is-link is-hidden-mobile">
-                + Create New Benchmark
-              </a>
-            </Link>
-          </div>
+          <h1 className="title is-2">Hello Shiny new Benchmarking World</h1>
           <p className="subtitle is-4" style={{ maxWidth: 640 }}>
             This is the demonstration UI for{" "}
             <a href="https://sine.foundation/" rel="noreferrer" target="_blank">
@@ -50,9 +44,37 @@ const IndexPage = () => {
             </a>
             {"'"}s benchmarking API.
           </p>
+          <p>
+            Our Benchmarking Service comes in 2 flavors:
+            <ol>
+              <li>You can compare yourself against existing datasets</li>
+              <li>
+                You can perform open benchmarking which different parties can
+                join any time. After the necessary submissions were recorded,
+                benchmarking starts.
+              </li>
+            </ol>
+          </p>
+          <div className="field is-grouped">
+            <div className="control">
+              <Link href="/datasets">
+                <a className="button is-link is-small">
+                  Compare against datasets
+                </a>
+              </Link>
+            </div>
+            <div className="control">
+              <Link href="/new">
+                <a className="button is-link is-small">Create a new Session</a>
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className="block">
+          <h2 className="title is-3">
+            Benchmarking Sessions you can join right now
+          </h2>
           {error && <ErrorMessage>{error.message}</ErrorMessage>}
           {data && (
             <Table
@@ -69,12 +91,6 @@ const IndexPage = () => {
             />
           )}
           {!data && <p>Data is being loaded</p>}
-        </div>
-
-        <div className="block">
-          <Link href="/new">
-            <a className="button is-link">+ Create New Benchmark</a>
-          </Link>
         </div>
 
         {processing?.sessions?.length ? (

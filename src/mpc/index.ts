@@ -11,15 +11,18 @@ import * as mpc from "./mpc_basics";
 const ZP = 16777729;
 const PARTY_ID = Number(process.env.MPC_NODE_ID ?? "0");
 const DEFAULT_COORDINATOR = "http://localhost:8080";
-const PARTY_COUNT = (process.env.PROCESSOR_HOSTNAMES ?? "").split(",").length;
 
 type Session = {
   id: string;
   submissionIds: string[];
   ops: {
     submissions: number[];
-    c: ComputationKind;
+    c: ComputationKind | "RANKING_DATASET";
   }[];
+};
+
+type ExpandedBenchmarkingSession = BenchmarkingSession & {
+  submissions: Submission[];
 };
 
 export async function PerformBenchmarking(sessionId: string) {
@@ -34,14 +37,23 @@ export async function PerformBenchmarking(sessionId: string) {
 
     await startSession(sessionId); // let this crash in case a concurrent start happend
 
+    const s = session.datasetId
+      ? await fromDataset(session)
+      : verticalize(session);
+
+    if (!s) {
+      console.error("Failed to construct session for interpreter");
+      return;
+    }
+
     console.log("MPC is starting...");
     mpc.connect({
       computationId: sessionId,
       hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
       party_id: PARTY_ID,
-      party_count: PARTY_COUNT,
+      party_count: session.processorHostnames.length,
       Zp: ZP,
-      onConnect: interpreter(verticalize(session)),
+      onConnect: interpreter(s),
     });
   } catch (error) {
     console.error("Failed to perform MPC", error);
@@ -68,20 +80,56 @@ function verticalize(
   };
 }
 
+async function fromDataset(
+  s: ExpandedBenchmarkingSession
+): Promise<Session | null> {
+  try {
+    const dataset = s.datasetId ? await getDataset(s.datasetId) : null;
+
+    if (!dataset) {
+      console.error("Failed to find dataset ", s.datasetId);
+      return null;
+    }
+
+    const ops: Session["ops"] = s.inputTitles.map((title) => ({
+      submissions: dataset[title] ?? [],
+      c: "RANKING_DATASET", // TODO
+    }));
+
+    return {
+      id: s.id,
+      submissionIds: s.submissions.map((s) => s.id),
+      ops,
+    };
+  } catch (error) {}
+
+  return null;
+}
+
 const interpreter = (session: Session) => async (jiff_instance: JIFFClient) => {
-  console.log("MPC Connected!");
+  console.log("MPC Connected!", session);
 
-  const allSecrets = session.ops.map((op) => {
-    console.assert(op.c === "RANKING");
-
-    const secrets = mpc.remerge_secrets(jiff_instance, op.submissions);
-    const secrets_sorted = mpc.sort(secrets);
-    return mpc.ranking(secrets_sorted, secrets);
+  const allSecrets = session.ops.map(async (op) => {
+    switch (op.c) {
+      case "RANKING": {
+        const secrets = mpc.remerge_secrets(jiff_instance, op.submissions);
+        const secrets_sorted = mpc.sort(secrets);
+        return jiff_instance.open_array(mpc.ranking(secrets_sorted, secrets));
+      }
+      case "RANKING_DATASET": {
+        const {
+          referenceSecret,
+          datasetSecrets,
+        } = await mpc.share_dataset_secrets(jiff_instance, op.submissions, 2);
+        const res = await jiff_instance.open(
+          mpc.ranking_const(referenceSecret, datasetSecrets)
+        );
+        return [res];
+      }
+    }
   });
 
-  const allResults = await Promise.all(
-    allSecrets.map((a) => jiff_instance.open_array(a))
-  );
+  const allResults = await Promise.all(allSecrets);
 
   console.log("allResults: ", allResults);
 
@@ -146,6 +194,26 @@ async function startSession(sessionId: string) {
       session: { connect: { id: sessionId } },
     },
   });
+}
+
+type DatasetKV = {
+  [dimension: string]: number[];
+};
+
+async function getDataset(datasetId: string): Promise<DatasetKV | null> {
+  const ds = await prismaConnection().dataset.findUnique({
+    include: {
+      dimensions: true,
+    },
+    where: { id: datasetId },
+  });
+
+  if (!ds) return null;
+
+  return ds.dimensions.reduce<DatasetKV>((agg, dim) => {
+    agg[dim.name] = dim.integerValues;
+    return agg;
+  }, {});
 }
 
 /*async function finishSession(sessionId: string) {
