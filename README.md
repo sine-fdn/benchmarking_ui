@@ -32,10 +32,12 @@ Here we assume the following PG connection details:
 The DB set up can then proceed as follows:
 
 ```sh
-DATABASE_URL="postgresql://benchmarking_demo:test123@localhost:5432/benchmarking_demo?schema=node1" yarn prisma migrate deploy  --preview-feature
+DATABASE_URL="postgresql://benchmarking_demo:test123@localhost:5432/ \
+benchmarking_demo?schema=node1" yarn prisma migrate deploy  --preview-feature
 
 # note the difference in the schema parameter
-DATABASE_URL="postgresql://benchmarking_demo:test123@localhost:5432/benchmarking_demo?schema=node2" yarn prisma migrate deploy  --preview-feature
+DATABASE_URL="postgresql://benchmarking_demo:test123@localhost:5432/ \
+benchmarking_demo?schema=node2" yarn prisma migrate deploy  --preview-feature
 ```
 
 ## Node setup
