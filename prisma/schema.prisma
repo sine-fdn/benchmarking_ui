@@ -47,20 +47,30 @@ model Submission {
     @@map("submissions")
 }
 
+/// a dataset models a matrix vector product (somewhat)
+/// - there are "n" input dimensions
+/// - there are "m" output dimensions (field "dimensions")
+///
+/// This will be encoded as follows:
+/// 1) each input dimension is enumerated in {inputDimensions}
+/// 2) for each input dimension at index {i}, there is a
+///    corresponding entry in {dimension[*].inputTransform[i]}.
 model Dataset {
     id                  String                @id @default(cuid())
     createdAt           DateTime              @default(now()) @map("created_at")
     BenchmarkingSession BenchmarkingSession[]
+    inputDimensions     String[]              @map("input_dimensions")
     dimensions          DatasetDimension[]
 
     @@map("datasets")
 }
 
 model DatasetDimension {
-    datasetId     String   @map("dataset_id")
-    name          String
-    createdAt     DateTime @default(now()) @map("created_at")
-    integerValues Int[]    @map("integer_values")
+    datasetId      String   @map("dataset_id")
+    name           String
+    createdAt      DateTime @default(now()) @map("created_at")
+    integerValues  Int[]    @map("integer_values")
+    inputTransform Int[]    @map("input_transform")
 
     dataset Dataset @relation(fields: [datasetId], references: [id])
 

@@ -112,7 +112,7 @@ export default function DatasetPage() {
             <NewSubmissionForm
               sessionId={dataset.id}
               onSubmit={onSubmit}
-              inputTitles={dataset.dimensions}
+              inputTitles={dataset.inputDimensions}
             />
           )}
           {s.s === "SESSION_CREATION" && (

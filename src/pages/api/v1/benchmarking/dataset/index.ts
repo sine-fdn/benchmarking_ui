@@ -20,9 +20,13 @@ export default async function NewBenchmarkingSession(
     const datasets = await prismaConnection().dataset.findMany({
       select: {
         id: true,
+        inputDimensions: true,
         dimensions: {
           select: {
             name: true,
+          },
+          orderBy: {
+            name: "asc",
           },
         },
       },
@@ -34,6 +38,7 @@ export default async function NewBenchmarkingSession(
         name: ds.id,
         id: ds.id,
         dimensions: ds.dimensions.map((d) => d.name),
+        inputDimensions: ds.inputDimensions,
       })),
     });
   } catch (error) {

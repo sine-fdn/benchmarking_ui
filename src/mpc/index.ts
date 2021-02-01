@@ -12,13 +12,14 @@ const ZP = 16777729;
 const PARTY_ID = Number(process.env.MPC_NODE_ID ?? "0");
 const DEFAULT_COORDINATOR = "http://localhost:8080";
 
+type Op =
+  | { submissions: number[]; c: ComputationKind }
+  | { dataset: number[]; transforms: number[]; c: "RANKING_DATASET" };
+
 type Session = {
   id: string;
   submissionIds: string[];
-  ops: {
-    submissions: number[];
-    c: ComputationKind | "RANKING_DATASET";
-  }[];
+  ops: Op[];
 };
 
 type ExpandedBenchmarkingSession = BenchmarkingSession & {
@@ -91,9 +92,11 @@ async function fromDataset(
       return null;
     }
 
-    const ops: Session["ops"] = s.inputTitles.map((title) => ({
-      submissions: dataset[title] ?? [],
-      c: "RANKING_DATASET", // TODO
+    // for each output dimension, perform MPC of kind "RANKING_DATASET"
+    const ops: Session["ops"] = dataset.dimensions.map((t) => ({
+      c: "RANKING_DATASET",
+      dataset: t.integerValues,
+      transforms: t.inputTransform,
     }));
 
     return {
@@ -120,7 +123,13 @@ const interpreter = (session: Session) => async (jiff_instance: JIFFClient) => {
         const {
           referenceSecret,
           datasetSecrets,
-        } = await mpc.share_dataset_secrets(jiff_instance, op.submissions, 2);
+        } = await mpc.share_dataset_secrets(
+          jiff_instance,
+          op.transforms,
+          op.dataset,
+          1,
+          2
+        );
         const res = await jiff_instance.open(
           mpc.ranking_const(referenceSecret, datasetSecrets)
         );
@@ -197,23 +206,29 @@ async function startSession(sessionId: string) {
 }
 
 type DatasetKV = {
-  [dimension: string]: number[];
+  dimensions: {
+    name: string;
+    inputTransform: number[];
+    integerValues: number[];
+  }[];
 };
 
 async function getDataset(datasetId: string): Promise<DatasetKV | null> {
-  const ds = await prismaConnection().dataset.findUnique({
-    include: {
-      dimensions: true,
+  return prismaConnection().dataset.findUnique({
+    select: {
+      dimensions: {
+        select: {
+          name: true,
+          integerValues: true,
+          inputTransform: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      },
     },
     where: { id: datasetId },
   });
-
-  if (!ds) return null;
-
-  return ds.dimensions.reduce<DatasetKV>((agg, dim) => {
-    agg[dim.name] = dim.integerValues;
-    return agg;
-  }, {});
 }
 
 /*async function finishSession(sessionId: string) {

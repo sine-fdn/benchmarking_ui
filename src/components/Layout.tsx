@@ -76,7 +76,7 @@ const Layout = ({ children, title = "This is the default title" }: Props) => (
               r="13"
               fill="white"
               stroke="black"
-              stroke-width="1.5"
+              strokeWidth="1.5"
             ></circle>
             <path
               d="M98.1313 7.862V20H99.5593V9.647H99.5933L106.495 20H107.855V7.862H106.444V17.552H106.41L99.9333 7.862H98.1313Z"
@@ -90,7 +90,7 @@ const Layout = ({ children, title = "This is the default title" }: Props) => (
               r="13"
               fill="white"
               stroke="black"
-              stroke-width="1.5"
+              strokeWidth="1.5"
             ></circle>
             <path
               d="M151.338 18.776H144.572V14.56H150.573V13.319H144.572V9.086H151.321V7.862H143.127V20H151.338V18.776Z"
