@@ -4,15 +4,25 @@ import {
   NewSessionApiResponse,
   SessionListingApiResponse,
 } from "@sine-fdn/sine-ts";
+import Cors from "cors";
 import { Dataset } from "@prisma/client";
 import NewSessionSchema from "../../../../../../schemas/NewSession.schema";
 import prismaConnection from "../../../../../../utils/prismaConnection";
 import { PerformBenchmarking } from "../../../../../../mpc";
+import initMiddleware from "../../../../../../utils/initMiddleware";
+
+const cors = initMiddleware(
+  Cors({
+    methods: ["GET", "POST", "HEAD", "CREATE", "OPTIONS"],
+  })
+);
 
 export default async function NewBenchmarkingSession(
   req: NextApiRequest,
   res: NextApiResponse<NewSessionApiResponse | SessionListingApiResponse>
 ) {
+  if (!(await cors(req, res))) return;
+
   if (req.method === "HEAD") {
     return res.status(200).end();
   }
