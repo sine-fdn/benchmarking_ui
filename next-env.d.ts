@@ -17,6 +17,7 @@ declare class SecretShare {
   sadd(n: number | SecretShare): SecretShare;
   sub(s: SecretShare | number): SecretShare;
   mult(s: SecretShare | number): SecretShare;
+  div(s: SecretShare | number): SecretShare;
 
   gt(n: number | SecretShare): SecretShare;
   sgt(s: SecretShare): SecretShare;
@@ -38,8 +39,21 @@ declare class JIFFClient {
   share_array(
     secrets: number[],
     length?: number
-  ): { [party_id: string]: SecretShare[] };
+  ): Promise<{ [party_id: string]: SecretShare[] }>;
   open_array(shares: SecretShare[]): Promise<number[]>;
 
   disconnect(safe?: boolean, free?: boolean): void;
+
+  preprocessing(
+    dependent_op: string,
+    count: number = 1,
+    protocols: Record<string, unknown> | undefined = undefined,
+    threshold: number | undefined = undefined,
+    receivers_list: number[] | undefined = undefined,
+    compute_list: number[] | undefined = undefined,
+    Zp: number | undefined = undefined,
+    id_list: number | undefined = undefined,
+    params: Record<string, unknown> | undefined = undefined
+  );
+  executePreprocessing(fn: () => unknown);
 }

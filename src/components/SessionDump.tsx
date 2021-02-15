@@ -1,6 +1,6 @@
+import { GetSessionApiSuccessResponse } from "@sine-fdn/sine-ts/dist/types/benchmarking";
 import Link from "next/link";
 import React from "react";
-import { GetSessionApiSuccessResponse } from "../interfaces";
 import Table from "./Table";
 
 type SessionTableProps = {

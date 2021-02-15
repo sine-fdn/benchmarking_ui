@@ -37,17 +37,14 @@ export default function DatasetPage() {
     }
 
     const ds = datasets?.datasets.find((d) => d.id === datasetId);
-
     if (ds) {
       setProcessingStatus({ s: "NEEDS_INPUT" });
     }
 
-    console.log("update ds: ", ds, datasets, datasetId, router.query);
     return ds;
   }, [datasets]);
 
   async function onSubmit(submission: NewBenchmarkingSubmission) {
-    console.log("onSubmit()");
     if ((s.s !== "NEEDS_INPUT" && s.s !== "ERROR") || !dataset) return;
     setProcessingStatus({ s: "SESSION_CREATION" });
 
@@ -70,11 +67,16 @@ export default function DatasetPage() {
     }
 
     setProcessingStatus({ s: "MPC_RUNNING" });
-
+    const startTS = new Date();
     try {
       const result = await datasetBenchmarking(
         res.id,
-        submission.integerValues
+        submission.integerValues,
+        dataset.dimensions.length
+      );
+      console.log(
+        "Runtime: ",
+        Math.abs(new Date().getTime() - startTS.getTime())
       );
       setProcessingStatus({ s: "FINISHED", res: result });
     } catch (error) {
@@ -84,7 +86,7 @@ export default function DatasetPage() {
       });
     }
 
-    await router.push(`/${res.id}`);
+    // await router.push(`/${res.id}`);
   }
 
   const showForm = dataset && (s.s === "NEEDS_INPUT" || s.s === "ERROR");
@@ -115,6 +117,7 @@ export default function DatasetPage() {
               inputTitles={dataset.inputDimensions}
             />
           )}
+
           {s.s === "SESSION_CREATION" && (
             <p>Creating new benchmarking session at the remote server...</p>
           )}

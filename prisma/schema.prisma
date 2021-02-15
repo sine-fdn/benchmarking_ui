@@ -10,6 +10,7 @@ generator client {
 
 enum ComputationKind {
     RANKING
+    FUNCTION_CALL
 
     @@map("computation_kind")
 }
@@ -71,11 +72,25 @@ model DatasetDimension {
     createdAt      DateTime @default(now()) @map("created_at")
     integerValues  Int[]    @map("integer_values")
     inputTransform Int[]    @map("input_transform")
+    unitTransform  Int[]    @map("unit_transform")
 
     dataset Dataset @relation(fields: [datasetId], references: [id])
 
     @@unique([datasetId, name])
     @@map("dataset_dimensions")
+}
+
+model MpcFunction {
+    id        String    @id @default(cuid())
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime? @updatedAt @map("updated_at")
+
+    inputs  String[]
+    outputs String[]
+
+    inputMatrix Int[] @map("input_matrix")
+
+    @@map("mpc_functions")
 }
 
 enum ProcessingStatus {
