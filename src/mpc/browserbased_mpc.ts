@@ -2,11 +2,13 @@ import { mpc, SessionId } from "@sine-fdn/sine-ts";
 
 async function benchmarkSingleValue(
   jiff_instance: JIFFClient,
-  secretData: number
+  secretData: number[]
 ): Promise<SecretShare> {
   const secrets = await mpc.share_dataset_secrets(
     jiff_instance,
-    [secretData],
+    secretData,
+    [],
+    1,
     2
   );
 
@@ -27,7 +29,7 @@ export async function datasetBenchmarking(
         console.log("connected!");
 
         const allResults = await Promise.all(
-          secretData.map((s) => benchmarkSingleValue(jiff_instance, s))
+          secretData.map(() => benchmarkSingleValue(jiff_instance, secretData))
         );
         const res = await jiff_instance.open_array(allResults);
         console.log("result is: ", res);

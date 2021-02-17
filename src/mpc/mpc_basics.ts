@@ -48,24 +48,37 @@ interface ShareSecretsResult {
 
 export async function share_dataset_secrets(
   jiff_instance: JIFFClient,
+  transform: number[],
   secrets: number[],
+  dataset_node_id: number,
   other_node_id: number
 ): Promise<ShareSecretsResult> {
-  const all = await jiff_instance.share_array(secrets);
-  console.log("share datasets: ", all);
-  const datasetSecrets = Object.values(all).reduce(
-    (agg, secrets, idx) =>
-      idx !== other_node_id ? agg.concat(secrets) : secrets,
-    []
-  );
-  const referenceSecret =
-    typeof all[other_node_id] === "object" && all[other_node_id].length === 1
-      ? all[other_node_id][0]
-      : null;
+  const [allTransforms, dataset] = await Promise.all([
+    jiff_instance.share_array(transform),
+    jiff_instance.share_array(secrets),
+  ]);
 
-  if (!referenceSecret) {
-    throw new Error("other_node_id is missing from shared secrets");
+  const datasetSecrets = dataset[dataset_node_id];
+
+  // compute "matrix vector multiplikation" against allTransforms
+  const transformSecrets = allTransforms[dataset_node_id];
+  const otherSecrets = allTransforms[other_node_id];
+
+  if (
+    !otherSecrets ||
+    !transformSecrets ||
+    otherSecrets.length != transformSecrets.length ||
+    transformSecrets.length == 0
+  ) {
+    console.error("res", { otherSecrets, transformSecrets });
+    throw new Error("Input data invariant(s) failed");
   }
+
+  // perform dot-product
+  const referenceSecret = transformSecrets.reduce<SecretShare | number>(
+    (prev, scalar, idx) => scalar.mult(otherSecrets[idx]).add(prev),
+    0
+  ) as SecretShare;
 
   return {
     datasetSecrets,
