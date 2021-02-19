@@ -5,6 +5,7 @@
     "local-demo": "concurrently --kill-others \"yarn start-node-1\" \"yarn start-node-2\"",
     "dev": "next",
     "build": "next build && tsc --project tsconfig.server.json",
+    "build:cmdtool": "cd cmdtool && yarn install && yarn build",
     "generate": "prisma generate",
     "type-check": "tsc -p . --noEmit",
     "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix",

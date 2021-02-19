@@ -1,0 +1,51 @@
+{
+  "datasets": [
+    {
+      "id": "new-dataset-id",
+      "dimensions": [
+        {
+          "id": "Dimension 1",
+          "integerValues": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "Dimension 2",
+          "integerValues": [
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "id": "Dimension 3",
+          "integerValues": [
+            700,
+            800,
+            900
+          ]
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "new-function-id",
+      "inputs": [
+        "input-1-name",
+        "input-2-name"
+      ],
+      "outputs": [
+        "output-name"
+      ],
+      "inputMatrix": [
+        [
+          1,
+          1
+        ]
+      ]
+    }
+  ]
+}
