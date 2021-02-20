@@ -9,6 +9,7 @@ import cmd_set_dataset, {
 } from "./command/set_dataset";
 import prismaClient from "./prismaClient";
 import cmd_import, { cmd_create_import_prototype } from "./command/import";
+import cmd_cozero_import from "./command/cozero_import";
 
 const program = new Command();
 
@@ -41,6 +42,11 @@ program
   .command("create-import-prototype")
   .description("Outputs a bulk import JSON definition")
   .action(cmd_create_import_prototype);
+
+program
+  .command("cozero-import")
+  .description("Perform cozero-specific data import")
+  .action(cmd_cozero_import);
 
 (async function main() {
   await program.parseAsync();

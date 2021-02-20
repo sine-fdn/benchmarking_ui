@@ -14,16 +14,19 @@ export default async function cmd_import(path: string) {
       }
     )) as ImportData;
 
-    await Promise.all(importData.datasets.map(set_dataset));
+    await do_import(importData);
     console.log(`${importData.datasets.length} Datasets imported`);
-
-    await Promise.all(importData.functions.map(set_function));
     console.log(`${importData.functions.length} Functions imported`);
     console.log(`Import succeeded`);
   } catch (error) {
     console.error("Fatal error while creating function:", error);
     process.exit(1);
   }
+}
+
+export async function do_import(importData: ImportData) {
+  await Promise.all(importData.datasets.map(set_dataset));
+  await Promise.all(importData.functions.map(set_function));
 }
 
 export function cmd_create_import_prototype() {
