@@ -47,18 +47,18 @@ CO2 emissions from kilometers travelled by 3 car types: a luxury gasoline car, a
 Let's further assume the function works like this
 
 ```
-co2(milesLuxuryCar, milesElectric, milesTruck) =
-     50 * milesLuxuryCar
-   +  3 * milesElectric
-   + 75 * milesTruck
+co2(kkmLuxuryCar, kkmElectric, kkmTruck) =
+     50 * kkmLuxuryCar
+   +  3 * kkmElectric
+   + 75 * kkmTruck
 ```
 
-then the equivalent function definition would be, wherein the inputs would be kilo miles (i.e. 1k miles):
+then the equivalent function definition would be, wherein the inputs would be kilo kilometers (i.e. `1000 * 1000 meters`):
 
 ```json
 {
   "id": "co2-emissions-example",
-  "inputs": ["kilomiles-luxury-car", "kilomiles-electric", "kilomiles-truck"],
+  "inputs": ["kkm-luxury-car", "kkm-electric", "kkm-truck"],
   "outputs": ["fleet-co2-emissions"],
   "inputMatrix": [[50, 3, 75]]
 }
@@ -69,7 +69,7 @@ You could even define a function that, in addition, outputs the total number of 
 ```json
 {
   "id": "co2-emissions-example",
-  "inputs": ["kilomiles-luxury-car", "kilomiles-electric", "kilomiles-truck"],
+  "inputs": ["kkm-luxury-car", "kkm-electric", "kkm-truck"],
   "outputs": ["fleet-co2-emissions", "fleet-kilometers-total"],
   "inputMatrix": [
     [50, 3, 75],
@@ -78,7 +78,7 @@ You could even define a function that, in addition, outputs the total number of 
 }
 ```
 
-(i.e. take the inputs, which are in kilo miles and mulitply them by 1000 plus finally summing them up)
+(i.e. take the inputs, which are in kilo kilometers and mulitply them by 1000 plus finally summing them up)
 
 To import this function, execute
 
