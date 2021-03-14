@@ -8,7 +8,7 @@ import Cors from "cors";
 import { Dataset } from "@prisma/client";
 import NewSessionSchema from "../../../../../../schemas/NewSession.schema";
 import prismaConnection from "../../../../../../utils/prismaConnection";
-import { PerformBenchmarking } from "../../../../../../mpc";
+import { PerformBenchmarkingAsLead } from "../../../../../../mpc";
 import initMiddleware from "../../../../../../utils/initMiddleware";
 
 const cors = initMiddleware(
@@ -16,6 +16,11 @@ const cors = initMiddleware(
     methods: ["GET", "POST", "HEAD", "CREATE", "OPTIONS"],
   })
 );
+
+const DELEGATED_UPSTREAM_HOST = process.env.DELEGATED_UPSTREAM_HOST;
+if (typeof DELEGATED_UPSTREAM_HOST !== "string") {
+  throw new Error("DELEGATED_UPSTREAM_HOST is not set");
+}
 
 export default async function NewBenchmarkingSession(
   req: NextApiRequest,
@@ -58,7 +63,14 @@ async function post(
     });
   }
 
-  const maybeId = await createSession(maybeNewSession, datasetId, ["", ""], 0);
+  const delegated = maybeNewSession.input[0].options?.delegated ?? false;
+
+  const maybeId = await createSession(
+    maybeNewSession,
+    datasetId,
+    delegated ? ["", "", ""] : ["", ""],
+    0
+  );
   if (!maybeId) {
     return res.status(400).json({
       success: false,
@@ -66,7 +78,20 @@ async function post(
     });
   }
 
-  PerformBenchmarking(maybeId);
+  if (delegated) {
+    await fetch(
+      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/dataset/${datasetId}/join/${maybeId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.body),
+      }
+    );
+  }
+
+  PerformBenchmarkingAsLead(maybeId, maybeNewSession.input[0].options);
 
   return res.status(201).json({
     success: true,

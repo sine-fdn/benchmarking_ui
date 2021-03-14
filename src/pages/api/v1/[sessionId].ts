@@ -10,7 +10,7 @@ import Cors from "cors";
 import NewBenchmarkingSubmissionSchema from "../../../schemas/NewBenchmarkingSubmission.schema";
 import prismaConnection from "../../../utils/prismaConnection";
 import initMiddleware from "../../../utils/initMiddleware";
-import { PerformBenchmarking } from "../../../mpc";
+import { PerformBenchmarkingAsLead } from "../../../mpc";
 import { sessionFetchLogic } from "../../../api_lib/sessionFetchLogic";
 
 const cors = initMiddleware(
@@ -147,7 +147,7 @@ async function maybeTriggerMpc(sessionId: string, numParties: number) {
     return;
   }
 
-  PerformBenchmarking(sessionId);
+  PerformBenchmarkingAsLead(sessionId);
 }
 
 function validateBody(

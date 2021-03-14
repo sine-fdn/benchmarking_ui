@@ -1,26 +1,25 @@
-import { ComputationKind } from "@prisma/client";
 import {
   DatasetListingApiSuccessResponse,
   NewBenchmarkingSubmission,
-  NewSession,
 } from "@sine-fdn/sine-ts";
 import { useRouter } from "next/router";
 import React, { useMemo, useState } from "react";
 import ErrorMessage from "../../../components/ErrorMessage";
 import NewSubmissionForm from "../../../components/forms/NewSubmissionForm";
 import Layout from "../../../components/Layout";
-import { datasetBenchmarking } from "../../../mpc/browserbased_mpc";
-import ApiNewDatasetSession from "../../../services/ApiNewDatasetSession.service";
+import Table from "../../../components/Table";
+import { performBenchmarking } from "../../../mpc/browserbased_mpc";
 import useDatasetListing from "../../../services/useDatasetListing";
 
 type Dataset = DatasetListingApiSuccessResponse["datasets"][0];
 type ProcessingStatus =
   | { s: "LOADING_DATASET" }
   | { s: "NEEDS_INPUT" }
-  | { s: "SESSION_CREATION" }
   | { s: "MPC_RUNNING" }
   | { s: "FINISHED"; res: number[] }
   | { s: "ERROR"; message: string };
+
+const NUM_SHARDS = 1;
 
 export default function DatasetPage() {
   const { data: datasets, error } = useDatasetListing();
@@ -46,47 +45,28 @@ export default function DatasetPage() {
 
   async function onSubmit(submission: NewBenchmarkingSubmission) {
     if ((s.s !== "NEEDS_INPUT" && s.s !== "ERROR") || !dataset) return;
-    setProcessingStatus({ s: "SESSION_CREATION" });
-
-    const newSession: NewSession = {
-      title: dataset.name,
-      numParties: 2,
-      input: dataset.dimensions.map((d) => ({
-        title: d,
-        computation: ComputationKind.RANKING,
-      })),
-    };
-
-    const res = await ApiNewDatasetSession(dataset.id, newSession);
-    if (!res.success) {
-      setProcessingStatus({
-        s: "ERROR",
-        message: res.message ?? "Fatal error while processing request",
-      });
-      return;
-    }
-
     setProcessingStatus({ s: "MPC_RUNNING" });
     const startTS = new Date();
     try {
-      const result = await datasetBenchmarking(
-        res.id,
+      const { results: resultsPromise, sessionId } = await performBenchmarking(
+        dataset,
         submission.integerValues,
-        dataset.dimensions.length
+        NUM_SHARDS
       );
+
+      const results = await resultsPromise;
       console.log(
         "Runtime: ",
         Math.abs(new Date().getTime() - startTS.getTime())
       );
-      setProcessingStatus({ s: "FINISHED", res: result });
+      setProcessingStatus({ s: "FINISHED", res: results });
+      await router.push(`/${sessionId}`);
     } catch (error) {
       setProcessingStatus({
         s: "ERROR",
         message: `Failure while performing MPC: ${error}`,
       });
     }
-
-    // await router.push(`/${res.id}`);
   }
 
   const showForm = dataset && (s.s === "NEEDS_INPUT" || s.s === "ERROR");
@@ -118,17 +98,17 @@ export default function DatasetPage() {
             />
           )}
 
-          {s.s === "SESSION_CREATION" && (
-            <p>Creating new benchmarking session at the remote server...</p>
-          )}
           {s.s === "MPC_RUNNING" && (
             <p>Secure Multi-Party Computation is being performed...</p>
           )}
           {s.s === "FINISHED" && (
-            <p>
-              Computation finished. You are now being redirected to the results
-              page...
-            </p>
+            <Table
+              columns={["Dimension", "Rank"]}
+              rows={s.res.map((rank, idx) => [
+                <span key={`${idx}-1`}>{dataset?.dimensions[idx]}</span>,
+                <span key={`${idx}-2`}>{rank}</span>,
+              ])}
+            />
           )}
         </div>
       </div>
