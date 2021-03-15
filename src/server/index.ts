@@ -26,7 +26,7 @@ const startApp = async () => {
   const server = express();
   const httpServer = new HttpServer(server);
 
-  new JIFFServer(httpServer, { logs: true });
+  new JIFFServer(httpServer, { logs: false });
 
   server.use((req, res) => {
     handle(req, res, parse(req.url, true));
