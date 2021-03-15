@@ -220,9 +220,9 @@
   resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-2.13.1-2.fcbc4bb2d306c86c28014f596b1e8c7980af8bd4.tgz#4a6aba46db9be442712e4b14b5a72e1da830e837"
   integrity sha512-APwZRomHG94bOc3jY6kaoEOkVdavN859c5hCFOjhy014Uut8v5+dg1lz3RzUaiiSHK8NwgGKrO5rqO09yGu8Eg==
 
-"@sine-fdn/sine-ts@github:sine-fdn/sine-ts#v0.5.2":
-  version "0.5.2"
-  resolved "https://codeload.github.com/sine-fdn/sine-ts/tar.gz/1f890fb30ed2dea2eb212cd0ccd6dcc70c507908"
+"@sine-fdn/sine-ts@github:sine-fdn/sine-ts#v0.5.4":
+  version "0.5.4"
+  resolved "https://codeload.github.com/sine-fdn/sine-ts/tar.gz/4a7e79b12792f4962a53b6effcdc9a9c58ba39f2"
   dependencies:
     jiff-mpc "github:multiparty/jiff#2fc9231b45a497196c9d636964810e8a2f23d705"
 

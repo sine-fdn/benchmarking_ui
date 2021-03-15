@@ -8,7 +8,7 @@ import ErrorMessage from "../../../components/ErrorMessage";
 import NewSubmissionForm from "../../../components/forms/NewSubmissionForm";
 import Layout from "../../../components/Layout";
 import Table from "../../../components/Table";
-import { performBenchmarking } from "../../../mpc/browserbased_mpc";
+import MPCC from "../../../services/mpcClient";
 import useDatasetListing from "../../../services/useDatasetListing";
 
 type Dataset = DatasetListingApiSuccessResponse["datasets"][0];
@@ -48,12 +48,14 @@ export default function DatasetPage() {
     setProcessingStatus({ s: "MPC_RUNNING" });
     const startTS = new Date();
     try {
-      const { results: resultsPromise, sessionId } = await performBenchmarking(
+      const {
+        results: resultsPromise,
+        sessionId,
+      } = await MPCC.performBenchmarking(
         dataset,
         submission.integerValues,
         NUM_SHARDS
       );
-
       const results = await resultsPromise;
       console.log(
         "Runtime: ",
