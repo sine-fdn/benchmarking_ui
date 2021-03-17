@@ -35,9 +35,12 @@ async function post(
 ) {
   const functionId =
     typeof req.query.functionId === "string" ? req.query.functionId : "";
+  const delegated = req.query.delegated !== undefined;
   const mpcfun = await prismaConnection().mpcFunction.findUnique({
     where: { id: functionId },
   });
+
+  console.log("Function call", functionId, delegated);
 
   if (!mpcfun) {
     return res
@@ -59,7 +62,29 @@ async function post(
     }
   );
 
-  PerformFunctionCall(sessionId, mpcfun);
+  if (delegated) {
+    const r = await fetch(
+      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/function/${functionId}/join/${sessionId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(req.body),
+      }
+    );
+    if (!r.ok) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Upstream host failed" });
+    }
+  }
+
+  PerformFunctionCall(
+    sessionId,
+    mpcfun.inputMatrix,
+    delegated ? "LEADER" : undefined
+  );
 
   return res.status(201).json({ success: true, sessionId });
 }
