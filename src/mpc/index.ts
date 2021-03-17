@@ -3,7 +3,6 @@ import {
   ProcessingStatus,
   Prisma,
   Submission,
-  MpcFunction,
 } from "@prisma/client";
 import prismaConnection from "../utils/prismaConnection";
 import { mpc } from "@sine-fdn/sine-ts";
@@ -22,6 +21,10 @@ type Op =
   | {
       c: "FUNCTION_CALL";
       transforms: number[];
+    }
+  | {
+      c: "DELEGATED_FUNCTION_CALL";
+      transforms: number[];
     };
 
 type Session = {
@@ -34,9 +37,12 @@ type ExpandedBenchmarkingSession = BenchmarkingSession & {
   submissions: Submission[];
 };
 
+type DelegationType = "LEADER" | "FOLLOWER";
+
 export async function PerformFunctionCall(
   sessionId: string,
-  mpcfun: MpcFunction
+  inputMatrix: number[],
+  delegation?: DelegationType
 ) {
   console.log("Starting function call", sessionId);
 
@@ -52,15 +58,20 @@ export async function PerformFunctionCall(
     const s: Session = {
       id: sessionId,
       submissionIds: [],
-      ops: [{ c: "FUNCTION_CALL", transforms: mpcfun.inputMatrix }],
+      ops: [
+        {
+          c: delegation ? "DELEGATED_FUNCTION_CALL" : "FUNCTION_CALL",
+          transforms: inputMatrix,
+        },
+      ],
     };
 
     console.log("MPC is starting...");
     mpc.connect({
       computationId: sessionId,
       hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
-      party_id: PARTY_ID,
-      party_count: 2,
+      party_id: delegation === "FOLLOWER" ? 2 : 1,
+      party_count: delegation ? 3 : 2,
       Zp: ZP,
       //onConnect: preprocess(interpreter(s)),
       onConnect: interpreter(s),
@@ -283,6 +294,26 @@ const interpreter = (session: Session) => async (jiff_instance: JIFFClient) => {
         const res = await jiff_instance.open(
           mpc.dotproduct(secrets.datasetSecrets, secrets.referenceSecrets)
         );
+        return [res];
+      }
+      case "DELEGATED_FUNCTION_CALL": {
+        const allSecrets = await jiff_instance.share_array(
+          op.transforms,
+          undefined,
+          undefined,
+          [1, 2]
+        );
+        const referenceInput = allSecrets[3];
+
+        const result = mpc.dotproduct(allSecrets[1], referenceInput);
+        const resultPublic = jiff_instance.reshare(
+          result,
+          undefined,
+          [1, 2, 3],
+          [1, 2]
+        );
+
+        const res = await jiff_instance.open(resultPublic);
         return [res];
       }
     }
