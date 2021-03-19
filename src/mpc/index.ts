@@ -5,10 +5,9 @@ import {
   Submission,
 } from "@prisma/client";
 import prismaConnection from "../utils/prismaConnection";
-import { mpc } from "@sine-fdn/sine-ts";
+import { Zp, mpc } from "@sine-fdn/sine-ts";
 import { remerge_secrets } from "./mpc_primitives";
 
-const ZP = 16777729;
 const PARTY_ID = Number(process.env.MPC_NODE_ID ?? "0");
 const DEFAULT_COORDINATOR = "http://localhost:8080";
 
@@ -72,7 +71,7 @@ export async function PerformFunctionCall(
       hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
       party_id: delegation === "FOLLOWER" ? 2 : 1,
       party_count: delegation ? 3 : 2,
-      Zp: ZP,
+      Zp,
       //onConnect: preprocess(interpreter(s)),
       onConnect: interpreter(s),
     });
@@ -111,7 +110,7 @@ export async function PerformBenchmarkingAsLead(
       hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
       party_id: PARTY_ID,
       party_count: options ? 3 : 2,
-      Zp: ZP,
+      Zp,
       onConnect: interpreter(s),
     });
   } catch (error) {
@@ -143,7 +142,7 @@ export async function JoinBenchmarking(sessionId: string) {
       hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
       party_id: PARTY_ID,
       party_count: 3,
-      Zp: ZP,
+      Zp,
       onConnect: interpreter(s),
     });
   } catch (error) {
