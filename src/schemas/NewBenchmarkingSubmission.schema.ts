@@ -11,7 +11,7 @@ export default function NewBenchmarkingSubmissionSchema(
       .of(
         Yup.number()
           .min(0)
-          .max(16777729 - 1)
+          .max(24499973 - 1)
       )
       .min(numIntegerValues)
       .max(numIntegerValues)
