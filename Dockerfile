@@ -2,9 +2,7 @@ FROM mhart/alpine-node:14
 
 RUN mkdir /benchmarking
 
-RUN apk add git
-
-RUN git clone https://github.com/sine-fdn/benchmarking_ui /benchmarking
+COPY . /benchmarking
 
 WORKDIR /benchmarking
 
