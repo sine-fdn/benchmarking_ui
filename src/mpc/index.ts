@@ -4,11 +4,12 @@ import {
   QueueKind,
   Submission,
 } from "@prisma/client";
+import { CoordinatorUrl } from "@sine-fdn/sine-ts";
+import nextCoordinator from "../api_lib/nextCoordinator";
 import { MPCTaskOp } from "../server/types";
 import prismaConnection from "../utils/prismaConnection";
 
 const PARTY_ID = Number(process.env.MPC_NODE_ID ?? "0");
-const DEFAULT_COORDINATOR = process.env.COORDINATOR ?? "http://localhost:8080";
 
 type ExpandedBenchmarkingSession = BenchmarkingSession & {
   submissions: Submission[];
@@ -16,11 +17,17 @@ type ExpandedBenchmarkingSession = BenchmarkingSession & {
 
 type DelegationType = "LEADER" | "FOLLOWER";
 
+const COORDINATORS = (process.env.COORDINATOR ?? "http://localhost:3010")
+  .split(",")
+  .map((s) => s.trim());
+
 export async function enqueueFunctionCall(
   sessionId: string,
   inputMatrix: number[],
   delegation?: DelegationType
-): Promise<void> {
+): Promise<CoordinatorUrl> {
+  const qkind = QueueKind.OTHER;
+  const coordinator = nextCoordinator(qkind, COORDINATORS);
   const ops: MPCTaskOp[] = [
     {
       c: delegation ? "FUNCTION_CALL_DELEGATED" : "FUNCTION_CALL",
@@ -28,12 +35,14 @@ export async function enqueueFunctionCall(
     },
   ];
   await enqueueTask(
-    QueueKind.OTHER,
+    coordinator,
+    qkind,
     sessionId,
     ops,
     delegation === "FOLLOWER" ? 2 : 1,
     delegation ? 3 : 2
   );
+  return coordinator;
 }
 
 type ShardingOptions = { numShards: number; shardId: number };
@@ -41,7 +50,7 @@ type ShardingOptions = { numShards: number; shardId: number };
 export async function enqueueBenchmarkingAsLead(
   sessionId: string,
   options?: ShardingOptions
-) {
+): Promise<CoordinatorUrl> {
   console.log("Enqueueing benchmarking session", sessionId, options);
 
   const session = await getSession(sessionId);
@@ -56,12 +65,17 @@ export async function enqueueBenchmarkingAsLead(
     throw new Error("Failed to construct session for interpreter");
   }
 
+  const qkind = QueueKind.DATASET;
+  const coordinator = nextCoordinator(qkind, COORDINATORS);
   const party_id = PARTY_ID;
   const party_count = options ? 3 : 2;
-  await enqueueTask(QueueKind.DATASET, sessionId, ops, party_id, party_count);
+  await enqueueTask(coordinator, qkind, sessionId, ops, party_id, party_count);
+  return coordinator;
 }
 
-export async function enqueueJoinBenchmarking(sessionId: string) {
+export async function enqueueJoinBenchmarking(
+  sessionId: string
+): Promise<string> {
   console.log("Joining benchmarking session", sessionId);
 
   const session = await getSession(sessionId);
@@ -69,10 +83,20 @@ export async function enqueueJoinBenchmarking(sessionId: string) {
     throw new Error("Failed to find session");
   }
 
+  const qkind = QueueKind.DATASET;
+  const coordinator = nextCoordinator(qkind, COORDINATORS);
   const ops: MPCTaskOp[] = [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }];
   const party_id = PARTY_ID;
   const party_count = 3;
-  await enqueueTask(QueueKind.DATASET, sessionId, ops, party_id, party_count);
+  await enqueueTask(
+    coordinator,
+    QueueKind.DATASET,
+    sessionId,
+    ops,
+    party_id,
+    party_count
+  );
+  return coordinator;
 }
 
 /* input data is organized by submitter ("horizontal")
@@ -148,6 +172,7 @@ async function getSession(sessionId: string) {
 }
 
 async function enqueueTask(
+  coordinator: string,
   qkind: QueueKind,
   sessionId: string,
   ops: MPCTaskOp[],
@@ -161,7 +186,7 @@ async function enqueueTask(
       ops,
       partyId,
       partyCount,
-      coordinator: DEFAULT_COORDINATOR,
+      coordinator,
       session: { connect: { id: sessionId } },
     },
   });

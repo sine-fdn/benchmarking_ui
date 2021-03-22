@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import {
   NewSession,
-  NewSessionApiResponse,
+  NewDatasetSessionApiResponse,
   SessionListingApiResponse,
 } from "@sine-fdn/sine-ts";
 import Cors from "cors";
@@ -24,7 +24,7 @@ if (typeof DELEGATED_UPSTREAM_HOST !== "string") {
 
 export default async function NewBenchmarkingSession(
   req: NextApiRequest,
-  res: NextApiResponse<NewSessionApiResponse | SessionListingApiResponse>
+  res: NextApiResponse<NewDatasetSessionApiResponse | SessionListingApiResponse>
 ) {
   if (!(await cors(req, res))) return;
 
@@ -41,7 +41,7 @@ export default async function NewBenchmarkingSession(
 
 async function post(
   req: NextApiRequest,
-  res: NextApiResponse<NewSessionApiResponse>
+  res: NextApiResponse<NewDatasetSessionApiResponse>
 ) {
   const datasetId = req.query.datasetId;
   if (typeof datasetId !== "string") {
@@ -91,11 +91,15 @@ async function post(
     );
   }
 
-  await enqueueBenchmarkingAsLead(maybeId, maybeNewSession.input[0].options);
+  const coordinatorUrl = await enqueueBenchmarkingAsLead(
+    maybeId,
+    maybeNewSession.input[0].options
+  );
 
   return res.status(201).json({
     success: true,
     id: maybeId,
+    coordinatorUrl,
   });
 }
 

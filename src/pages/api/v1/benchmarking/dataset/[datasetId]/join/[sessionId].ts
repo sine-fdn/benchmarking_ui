@@ -1,4 +1,4 @@
-import { NewSession, NewSessionApiResponse } from "@sine-fdn/sine-ts";
+import { NewDatasetSessionApiResponse, NewSession } from "@sine-fdn/sine-ts";
 import { NextApiRequest, NextApiResponse } from "next";
 import { enqueueJoinBenchmarking } from "../../../../../../../mpc";
 import NewSessionSchema from "../../../../../../../schemas/NewSession.schema";
@@ -6,7 +6,7 @@ import prismaConnection from "../../../../../../../utils/prismaConnection";
 
 export default async function JoinSession(
   req: NextApiRequest,
-  res: NextApiResponse<NewSessionApiResponse>
+  res: NextApiResponse<NewDatasetSessionApiResponse>
 ) {
   if (req.method === "HEAD") {
     return res.status(200).end();
@@ -32,11 +32,12 @@ export default async function JoinSession(
   }
 
   await createSession(newSession, sessionId, ["", "", ""], 0);
-  await enqueueJoinBenchmarking(sessionId);
+  const coordinatorUrl = await enqueueJoinBenchmarking(sessionId);
 
   return res.status(201).json({
     success: true,
     id: sessionId,
+    coordinatorUrl,
   });
 }
 

@@ -80,11 +80,11 @@ async function post(
     }
   }
 
-  enqueueFunctionCall(
+  const coordinatorUrl = await enqueueFunctionCall(
     sessionId,
     mpcfun.inputMatrix,
     delegated ? "LEADER" : undefined
   );
 
-  return res.status(201).json({ success: true, sessionId });
+  return res.status(201).json({ success: true, sessionId, coordinatorUrl });
 }

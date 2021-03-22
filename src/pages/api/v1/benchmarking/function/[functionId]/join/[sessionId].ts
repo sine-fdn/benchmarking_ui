@@ -53,9 +53,9 @@ async function post(
       },
     });
 
-    enqueueFunctionCall(sessionId, [], "FOLLOWER");
+    const coordinatorUrl = await enqueueFunctionCall(sessionId, [], "FOLLOWER");
 
-    return res.status(201).json({ success: true, sessionId });
+    return res.status(201).json({ success: true, sessionId, coordinatorUrl });
   } catch (error) {
     console.error("Delegated function call failed", error);
     return res.status(500).json({ success: false, message: `Error: ${error}` });
