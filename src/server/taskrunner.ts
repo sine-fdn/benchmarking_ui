@@ -8,7 +8,15 @@ import { Zp, mpc, SessionId } from "@sine-fdn/sine-ts";
 import * as dotenv from "dotenv";
 import { MPCTaskOp } from "./types";
 
+function load_node_config(debug = false) {
+  const suffix =
+    process.argv.length > 2 && process.argv[2] ? process.argv[2] : "local";
+  const file = `.env.production.${suffix}`;
+  dotenv.config({ path: file, debug });
+}
+
 dotenv.config();
+load_node_config();
 
 const CLIENT = new PrismaClient();
 const TIMED_WAIT = 500; // retry every 500ms

@@ -9,6 +9,8 @@ UPSTREAM_HOSTNAMES="http://localhost:3000,http://localhost:3001"
 COORDINATOR="http://localhost:8000"
 MPC_NODE_ID=1
 DELEGATED_UPSTREAM_HOST="http://localhost:3001"
+CONCURRENCY=5
+DATA_CONCURRENCY=1
 ```
 
 The fields have the following meaning:
@@ -18,6 +20,8 @@ The fields have the following meaning:
 - `COORDINATOR`: hostname of the MPC coordinator (acts like a messaging hub) node
 - `MPC_NODE_ID`: unique ID (`1...n`) of the `n` nodes performing MPC. Please not that numbering starts with `1`. **Each MPC-participating node must have its unique id!**
 - `DELEGATED_UPSTREAM_HOST`: URL of the host to use for delegated MPC benchmarking sessions
+- `CURRENCY`: number of parallel function calls processed by a taskrunner
+- `DATA_CURRENCY`: number of parallel dataset comparisons run by a taskrunner
 
 ## Example set up
 
@@ -56,6 +60,8 @@ COORDINATOR="http://localhost:3000"
 MPC_NODE_ID=1
 PORT=3000
 DELEGATED_UPSTREAM_HOST="http://localhost:3001"
+CONCURRENCY=5
+DATA_CONCURRENCY=1
 ```
 
 as well as into `.env.production.node-2` the following contents
@@ -68,6 +74,8 @@ COORDINATOR="http://localhost:3000"
 MPC_NODE_ID=2
 PORT=3001
 DELEGATED_UPSTREAM_HOST="http://localhost:3000"
+CONCURRENCY=5
+DATA_CONCURRENCY=1
 ```
 
 ## Starting a local demo system

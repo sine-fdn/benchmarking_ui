@@ -2,7 +2,7 @@
   "name": "with-typescript",
   "version": "1.0.0",
   "scripts": {
-    "local-demo": "concurrently --kill-others \"yarn start-node-1\" \"yarn start-node-2\"",
+    "local-demo": "concurrently --kill-others \"yarn start-node-1\" \"yarn start-node-2\" \"yarn start-taskrunner-1\" \"yarn start-taskrunner-2\"",
     "dev": "next",
     "build": "next build && tsc --project tsconfig.server.json",
     "build:servers": "tsc --project tsconfig.server.json",
@@ -14,7 +14,8 @@
     "start-node-1": "NODE_ENV=production node ./.next/production-server/index.js",
     "start-node-2": "NODE_ENV=production node ./.next/production-server/index.js node-2",
     "start-coordinator": "PORT=3010 NODE_ENV=production node ./.next/production-server/coordinator.js",
-    "start-taskrunner": "NODE_ENV=production node ./.next/production-server/taskrunner.js"
+    "start-taskrunner-1": "NODE_ENV=production node ./.next/production-server/taskrunner.js",
+    "start-taskrunner-2": "NODE_ENV=production node ./.next/production-server/taskrunner.js node-2"
   },
   "dependencies": {
     "@hookform/resolvers": "^1.2.0",
