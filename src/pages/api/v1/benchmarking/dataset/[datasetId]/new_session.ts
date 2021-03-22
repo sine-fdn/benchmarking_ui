@@ -8,7 +8,7 @@ import Cors from "cors";
 import { Dataset } from "@prisma/client";
 import NewSessionSchema from "../../../../../../schemas/NewSession.schema";
 import prismaConnection from "../../../../../../utils/prismaConnection";
-import { PerformBenchmarkingAsLead } from "../../../../../../mpc";
+import { enqueueBenchmarkingAsLead } from "../../../../../../mpc";
 import initMiddleware from "../../../../../../utils/initMiddleware";
 
 const cors = initMiddleware(
@@ -91,7 +91,7 @@ async function post(
     );
   }
 
-  PerformBenchmarkingAsLead(maybeId, maybeNewSession.input[0].options);
+  await enqueueBenchmarkingAsLead(maybeId, maybeNewSession.input[0].options);
 
   return res.status(201).json({
     success: true,

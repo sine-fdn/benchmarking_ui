@@ -2,7 +2,7 @@ import { FunctionCallApiResponse } from "@sine-fdn/sine-ts";
 import { NextApiRequest, NextApiResponse } from "next";
 import Cors from "cors";
 
-import { PerformFunctionCall } from "../../../../../../../mpc";
+import { enqueueFunctionCall } from "../../../../../../../mpc";
 import initMiddleware from "../../../../../../../utils/initMiddleware";
 import prismaConnection from "../../../../../../../utils/prismaConnection";
 
@@ -53,7 +53,7 @@ async function post(
       },
     });
 
-    PerformFunctionCall(sessionId, [], "FOLLOWER");
+    enqueueFunctionCall(sessionId, [], "FOLLOWER");
 
     return res.status(201).json({ success: true, sessionId });
   } catch (error) {

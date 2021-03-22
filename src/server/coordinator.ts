@@ -12,7 +12,7 @@ const PORT = Number(process.env.PORT) || 8080;
 const app = express();
 const httpServer = new http.Server(app);
 
-new JIFFServer(httpServer, { logs: true });
+new JIFFServer(httpServer, { logs: false });
 
 httpServer.listen(PORT, function () {
   console.log(`Listening on *:${PORT}`);

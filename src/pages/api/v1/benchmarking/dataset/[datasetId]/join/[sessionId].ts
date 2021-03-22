@@ -1,6 +1,6 @@
 import { NewSession, NewSessionApiResponse } from "@sine-fdn/sine-ts";
 import { NextApiRequest, NextApiResponse } from "next";
-import { JoinBenchmarking } from "../../../../../../../mpc";
+import { enqueueJoinBenchmarking } from "../../../../../../../mpc";
 import NewSessionSchema from "../../../../../../../schemas/NewSession.schema";
 import prismaConnection from "../../../../../../../utils/prismaConnection";
 
@@ -32,7 +32,7 @@ export default async function JoinSession(
   }
 
   await createSession(newSession, sessionId, ["", "", ""], 0);
-  JoinBenchmarking(sessionId);
+  await enqueueJoinBenchmarking(sessionId);
 
   return res.status(201).json({
     success: true,

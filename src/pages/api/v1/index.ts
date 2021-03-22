@@ -4,7 +4,7 @@ import {
   NewSessionApiResponse,
   SessionListingApiResponse,
 } from "@sine-fdn/sine-ts";
-import { Prisma, ProcessingStatus, XOR } from "@prisma/client";
+import { Prisma, ProcessingStatus } from "@prisma/client";
 import NewSessionSchema from "../../../schemas/NewSession.schema";
 import prismaConnection from "../../../utils/prismaConnection";
 
@@ -42,10 +42,9 @@ export default async function NewBenchmarkingSession(
 
 async function listSessions(
   res: NextApiResponse<SessionListingApiResponse>,
-  processFilter: XOR<
-    Prisma.ProcessingQueueWhereInput,
-    Prisma.ProcessingQueueRelationFilter
-  >
+  processFilter:
+    | Prisma.ProcessingQueueWhereInput
+    | Prisma.ProcessingQueueRelationFilter
 ) {
   try {
     const openSessions = await prismaConnection().benchmarkingSession.findMany({
