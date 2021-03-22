@@ -24,16 +24,17 @@ const COORDINATORS = (process.env.COORDINATOR ?? "http://localhost:3010")
 export async function enqueueFunctionCall(
   sessionId: string,
   inputMatrix: number[],
-  delegation?: DelegationType
+  delegation?: DelegationType,
+  coordinator_?: CoordinatorUrl
 ): Promise<CoordinatorUrl> {
   const qkind = QueueKind.OTHER;
-  const coordinator = nextCoordinator(qkind, COORDINATORS);
   const ops: MPCTaskOp[] = [
     {
       c: delegation ? "FUNCTION_CALL_DELEGATED" : "FUNCTION_CALL",
       transforms: inputMatrix,
     },
   ];
+  const coordinator = coordinator_ ?? nextCoordinator(qkind, COORDINATORS);
   await enqueueTask(
     coordinator,
     qkind,
@@ -74,7 +75,8 @@ export async function enqueueBenchmarkingAsLead(
 }
 
 export async function enqueueJoinBenchmarking(
-  sessionId: string
+  sessionId: string,
+  coordinator: CoordinatorUrl
 ): Promise<string> {
   console.log("Joining benchmarking session", sessionId);
 
@@ -83,8 +85,6 @@ export async function enqueueJoinBenchmarking(
     throw new Error("Failed to find session");
   }
 
-  const qkind = QueueKind.DATASET;
-  const coordinator = nextCoordinator(qkind, COORDINATORS);
   const ops: MPCTaskOp[] = [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }];
   const party_id = PARTY_ID;
   const party_count = 3;

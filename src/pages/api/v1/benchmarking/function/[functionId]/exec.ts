@@ -62,9 +62,15 @@ async function post(
     }
   );
 
+  const coordinatorUrl = await enqueueFunctionCall(
+    sessionId,
+    mpcfun.inputMatrix,
+    delegated ? "LEADER" : undefined
+  );
+
   if (delegated) {
     const r = await fetch(
-      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/function/${functionId}/join/${sessionId}`,
+      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/function/${functionId}/join/${sessionId}?coordinator=${coordinatorUrl}`,
       {
         method: "POST",
         headers: {
@@ -79,12 +85,6 @@ async function post(
         .json({ success: false, message: "Upstream host failed" });
     }
   }
-
-  const coordinatorUrl = await enqueueFunctionCall(
-    sessionId,
-    mpcfun.inputMatrix,
-    delegated ? "LEADER" : undefined
-  );
 
   return res.status(201).json({ success: true, sessionId, coordinatorUrl });
 }

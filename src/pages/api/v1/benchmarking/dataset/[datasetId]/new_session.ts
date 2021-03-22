@@ -78,9 +78,14 @@ async function post(
     });
   }
 
+  const coordinatorUrl = await enqueueBenchmarkingAsLead(
+    maybeId,
+    maybeNewSession.input[0].options
+  );
+
   if (delegated) {
     await fetch(
-      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/dataset/${datasetId}/join/${maybeId}`,
+      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/dataset/${datasetId}/join/${maybeId}?coordinator=${coordinatorUrl}`,
       {
         method: "POST",
         headers: {
@@ -90,11 +95,6 @@ async function post(
       }
     );
   }
-
-  const coordinatorUrl = await enqueueBenchmarkingAsLead(
-    maybeId,
-    maybeNewSession.input[0].options
-  );
 
   return res.status(201).json({
     success: true,

@@ -36,7 +36,12 @@ async function post(
   try {
     const functionId = req.query.functionId;
     const sessionId = req.query.sessionId;
-    if (typeof functionId !== "string" || typeof sessionId !== "string") {
+    const coordinator = req.query.coordinator;
+    if (
+      typeof functionId !== "string" ||
+      typeof sessionId !== "string" ||
+      typeof coordinator !== "string"
+    ) {
       return res.status(500).json({ success: false, message: "oops" });
     }
 
@@ -53,7 +58,12 @@ async function post(
       },
     });
 
-    const coordinatorUrl = await enqueueFunctionCall(sessionId, [], "FOLLOWER");
+    const coordinatorUrl = await enqueueFunctionCall(
+      sessionId,
+      [],
+      "FOLLOWER",
+      coordinator
+    );
 
     return res.status(201).json({ success: true, sessionId, coordinatorUrl });
   } catch (error) {

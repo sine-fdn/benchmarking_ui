@@ -20,7 +20,12 @@ export default async function JoinSession(
 
   const datasetId = req.query.datasetId;
   const sessionId = req.query.sessionId;
-  if (typeof datasetId !== "string" || typeof sessionId !== "string") {
+  const coordinator = req.query.coordinator;
+  if (
+    typeof datasetId !== "string" ||
+    typeof sessionId !== "string" ||
+    typeof coordinator !== "string"
+  ) {
     return res.status(500).json({ success: false, message: "oops" });
   }
 
@@ -32,7 +37,7 @@ export default async function JoinSession(
   }
 
   await createSession(newSession, sessionId, ["", "", ""], 0);
-  const coordinatorUrl = await enqueueJoinBenchmarking(sessionId);
+  const coordinatorUrl = await enqueueJoinBenchmarking(sessionId, coordinator);
 
   return res.status(201).json({
     success: true,
