@@ -1,12 +1,12 @@
-import { NewSession, NewSessionApiResponse } from "@sine-fdn/sine-ts";
+import { NewDatasetSessionApiResponse, NewSession } from "@sine-fdn/sine-ts";
 import { NextApiRequest, NextApiResponse } from "next";
-import { JoinBenchmarking } from "../../../../../../../mpc";
+import { enqueueJoinBenchmarking } from "../../../../../../../mpc";
 import NewSessionSchema from "../../../../../../../schemas/NewSession.schema";
 import prismaConnection from "../../../../../../../utils/prismaConnection";
 
 export default async function JoinSession(
   req: NextApiRequest,
-  res: NextApiResponse<NewSessionApiResponse>
+  res: NextApiResponse<NewDatasetSessionApiResponse>
 ) {
   if (req.method === "HEAD") {
     return res.status(200).end();
@@ -20,7 +20,12 @@ export default async function JoinSession(
 
   const datasetId = req.query.datasetId;
   const sessionId = req.query.sessionId;
-  if (typeof datasetId !== "string" || typeof sessionId !== "string") {
+  const coordinator = req.query.coordinator;
+  if (
+    typeof datasetId !== "string" ||
+    typeof sessionId !== "string" ||
+    typeof coordinator !== "string"
+  ) {
     return res.status(500).json({ success: false, message: "oops" });
   }
 
@@ -32,11 +37,12 @@ export default async function JoinSession(
   }
 
   await createSession(newSession, sessionId, ["", "", ""], 0);
-  JoinBenchmarking(sessionId);
+  const coordinatorUrl = await enqueueJoinBenchmarking(sessionId, coordinator);
 
   return res.status(201).json({
     success: true,
     id: sessionId,
+    coordinatorUrl,
   });
 }
 

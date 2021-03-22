@@ -7,11 +7,12 @@ export default function NewBenchmarkingSubmissionSchema(
   return Yup.object({
     sessionId: Yup.string().required("Session ID is required"),
     submitter: Yup.string().required("Submitter name is required"),
-    integerValues: Yup.array()
+    integerValues: Yup.array<number[]>()
       .of(
         Yup.number()
           .min(0)
           .max(24499973 - 1)
+          .required()
       )
       .min(numIntegerValues)
       .max(numIntegerValues)

@@ -2,7 +2,7 @@ import { FunctionCallApiResponse } from "@sine-fdn/sine-ts";
 import { NextApiRequest, NextApiResponse } from "next";
 import Cors from "cors";
 
-import { PerformFunctionCall } from "../../../../../../../mpc";
+import { enqueueFunctionCall } from "../../../../../../../mpc";
 import initMiddleware from "../../../../../../../utils/initMiddleware";
 import prismaConnection from "../../../../../../../utils/prismaConnection";
 
@@ -36,7 +36,12 @@ async function post(
   try {
     const functionId = req.query.functionId;
     const sessionId = req.query.sessionId;
-    if (typeof functionId !== "string" || typeof sessionId !== "string") {
+    const coordinator = req.query.coordinator;
+    if (
+      typeof functionId !== "string" ||
+      typeof sessionId !== "string" ||
+      typeof coordinator !== "string"
+    ) {
       return res.status(500).json({ success: false, message: "oops" });
     }
 
@@ -53,9 +58,14 @@ async function post(
       },
     });
 
-    PerformFunctionCall(sessionId, [], "FOLLOWER");
+    const coordinatorUrl = await enqueueFunctionCall(
+      sessionId,
+      [],
+      "FOLLOWER",
+      coordinator
+    );
 
-    return res.status(201).json({ success: true, sessionId });
+    return res.status(201).json({ success: true, sessionId, coordinatorUrl });
   } catch (error) {
     console.error("Delegated function call failed", error);
     return res.status(500).json({ success: false, message: `Error: ${error}` });

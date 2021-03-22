@@ -103,7 +103,7 @@ const Layout = ({ children, title = "This is the default title" }: Props) => (
     </main>
     <footer className="footer">
       <div className="content has-text-centered">
-        © 2020{" "}
+        © {new Date().getFullYear()}{" "}
         <a href="https://sine.foundation" target="_blank" rel="noreferrer">
           SINE e.V.
         </a>{" "}

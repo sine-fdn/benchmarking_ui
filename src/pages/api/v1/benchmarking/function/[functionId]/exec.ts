@@ -2,7 +2,7 @@ import { FunctionCallApiResponse } from "@sine-fdn/sine-ts";
 import { NextApiRequest, NextApiResponse } from "next";
 import Cors from "cors";
 
-import { PerformFunctionCall } from "../../../../../../mpc";
+import { enqueueFunctionCall } from "../../../../../../mpc";
 import initMiddleware from "../../../../../../utils/initMiddleware";
 import prismaConnection from "../../../../../../utils/prismaConnection";
 
@@ -62,9 +62,15 @@ async function post(
     }
   );
 
+  const coordinatorUrl = await enqueueFunctionCall(
+    sessionId,
+    mpcfun.inputMatrix,
+    delegated ? "LEADER" : undefined
+  );
+
   if (delegated) {
     const r = await fetch(
-      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/function/${functionId}/join/${sessionId}`,
+      `${process.env.DELEGATED_UPSTREAM_HOST}/api/v1/benchmarking/function/${functionId}/join/${sessionId}?coordinator=${coordinatorUrl}`,
       {
         method: "POST",
         headers: {
@@ -80,11 +86,5 @@ async function post(
     }
   }
 
-  PerformFunctionCall(
-    sessionId,
-    mpcfun.inputMatrix,
-    delegated ? "LEADER" : undefined
-  );
-
-  return res.status(201).json({ success: true, sessionId });
+  return res.status(201).json({ success: true, sessionId, coordinatorUrl });
 }

@@ -1,36 +1,15 @@
 import {
   BenchmarkingSession,
   ProcessingStatus,
-  Prisma,
+  QueueKind,
   Submission,
 } from "@prisma/client";
+import { CoordinatorUrl } from "@sine-fdn/sine-ts";
+import nextCoordinator from "../api_lib/nextCoordinator";
+import { MPCTaskOp } from "../server/types";
 import prismaConnection from "../utils/prismaConnection";
-import { Zp, mpc } from "@sine-fdn/sine-ts";
-import { remerge_secrets } from "./mpc_primitives";
 
 const PARTY_ID = Number(process.env.MPC_NODE_ID ?? "0");
-const DEFAULT_COORDINATOR = "http://localhost:8080";
-
-type Op =
-  | { c: "RANKING"; submissions: number[] }
-  | {
-      c: "RANKING_DATASET" | "RANKING_DATASET_DELEGATED";
-      dataset: number[];
-    }
-  | {
-      c: "FUNCTION_CALL";
-      transforms: number[];
-    }
-  | {
-      c: "DELEGATED_FUNCTION_CALL";
-      transforms: number[];
-    };
-
-type Session = {
-  id: string;
-  submissionIds: string[];
-  ops: Op[];
-};
 
 type ExpandedBenchmarkingSession = BenchmarkingSession & {
   submissions: Submission[];
@@ -38,139 +17,87 @@ type ExpandedBenchmarkingSession = BenchmarkingSession & {
 
 type DelegationType = "LEADER" | "FOLLOWER";
 
-export async function PerformFunctionCall(
+const COORDINATORS = (process.env.COORDINATOR ?? "http://localhost:3010")
+  .split(",")
+  .map((s) => s.trim());
+
+export async function enqueueFunctionCall(
   sessionId: string,
   inputMatrix: number[],
-  delegation?: DelegationType
-) {
-  console.log("Starting function call", sessionId);
-
-  try {
-    const session = await getSession(sessionId);
-    if (!session) {
-      console.error("Failed to find session: ", sessionId);
-      return;
-    }
-
-    await startSession(sessionId);
-
-    const s: Session = {
-      id: sessionId,
-      submissionIds: [],
-      ops: [
-        {
-          c: delegation ? "DELEGATED_FUNCTION_CALL" : "FUNCTION_CALL",
-          transforms: inputMatrix,
-        },
-      ],
-    };
-
-    console.log("MPC is starting...");
-    mpc.connect({
-      computationId: sessionId,
-      hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
-      party_id: delegation === "FOLLOWER" ? 2 : 1,
-      party_count: delegation ? 3 : 2,
-      Zp,
-      //onConnect: preprocess(interpreter(s)),
-      onConnect: interpreter(s),
-    });
-  } catch (error) {}
+  delegation?: DelegationType,
+  coordinator_?: CoordinatorUrl
+): Promise<CoordinatorUrl> {
+  const qkind = QueueKind.OTHER;
+  const ops: MPCTaskOp[] = [
+    {
+      c: delegation ? "FUNCTION_CALL_DELEGATED" : "FUNCTION_CALL",
+      transforms: inputMatrix,
+    },
+  ];
+  const coordinator = coordinator_ ?? nextCoordinator(qkind, COORDINATORS);
+  await enqueueTask(
+    coordinator,
+    qkind,
+    sessionId,
+    ops,
+    delegation === "FOLLOWER" ? 2 : 1,
+    delegation ? 3 : 2
+  );
+  return coordinator;
 }
 
 type ShardingOptions = { numShards: number; shardId: number };
 
-export async function PerformBenchmarkingAsLead(
+export async function enqueueBenchmarkingAsLead(
   sessionId: string,
   options?: ShardingOptions
-) {
-  console.log("Starting benchmarking session", sessionId);
+): Promise<CoordinatorUrl> {
+  console.log("Enqueueing benchmarking session", sessionId, options);
 
-  try {
-    const session = await getSession(sessionId);
-    if (!session) {
-      console.error("Failed to find session: ", sessionId);
-      return;
-    }
-
-    await startSession(sessionId); // let this crash in case a concurrent start happend
-
-    const s = session.datasetId
-      ? await fromDataset(session, options)
-      : verticalize(session);
-
-    if (!s) {
-      console.error("Failed to construct session for interpreter");
-      return;
-    }
-
-    console.log("MPC is starting...");
-    mpc.connect({
-      computationId: sessionId,
-      hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
-      party_id: PARTY_ID,
-      party_count: options ? 3 : 2,
-      Zp,
-      onConnect: interpreter(s),
-    });
-  } catch (error) {
-    console.error("Failed to perform MPC", error);
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error("Failed to find session");
   }
+
+  const ops = session.datasetId
+    ? await fromDataset(session, options)
+    : verticalize(session);
+  if (!ops) {
+    throw new Error("Failed to construct session for interpreter");
+  }
+
+  const qkind = QueueKind.DATASET;
+  const coordinator = nextCoordinator(qkind, COORDINATORS);
+  const party_id = PARTY_ID;
+  const party_count = options ? 3 : 2;
+  await enqueueTask(coordinator, qkind, sessionId, ops, party_id, party_count);
+  return coordinator;
 }
 
-export async function JoinBenchmarking(sessionId: string) {
+export async function enqueueJoinBenchmarking(
+  sessionId: string,
+  coordinator: CoordinatorUrl
+): Promise<string> {
   console.log("Joining benchmarking session", sessionId);
 
-  try {
-    const session = await getSession(sessionId);
-    if (!session) {
-      console.error("Failed to find session: ", sessionId);
-      return;
-    }
-
-    await startSession(sessionId); // let this crash in case a concurrent start happend
-
-    const s: Session = {
-      id: sessionId,
-      submissionIds: [],
-      ops: [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }],
-    };
-
-    console.log("MPC is starting...");
-    mpc.connect({
-      computationId: sessionId,
-      hostname: process.env.COORDINATOR ?? DEFAULT_COORDINATOR,
-      party_id: PARTY_ID,
-      party_count: 3,
-      Zp,
-      onConnect: interpreter(s),
-    });
-  } catch (error) {
-    console.error("Failed to perform MPC", error);
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error("Failed to find session");
   }
-}
 
-/*
-const preprocess = (fn: (c: JIFFClient) => unknown) => (c: JIFFClient) => {
-  console.log("Starting preprocessing");
-  c.preprocessing(
-    "smult",
-    6,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    { div: false }
+  const ops: MPCTaskOp[] = [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }];
+  const party_id = PARTY_ID;
+  const party_count = 3;
+  await enqueueTask(
+    coordinator,
+    QueueKind.DATASET,
+    sessionId,
+    ops,
+    party_id,
+    party_count
   );
-  c.preprocessing("sdiv", 1);
-  c.preprocessing("sgt", 5);
-  c.executePreprocessing(() => {
-    console.log("Finished preprocessing");
-    fn(c);
-  });
-};*/
+  return coordinator;
+}
 
 /* input data is organized by submitter ("horizontal")
  * by verticalizing the input data, it is grouped by benchmarking dimension
@@ -180,23 +107,17 @@ function verticalize(
   s: BenchmarkingSession & {
     submissions: Submission[];
   }
-): Session {
-  const ops: Session["ops"] = s.inputComputations.map((_, idx) => ({
+): MPCTaskOp[] {
+  return s.inputComputations.map((_, idx) => ({
     submissions: s.submissions.map((s) => s.integerValues[idx]),
     c: "RANKING",
   }));
-
-  return {
-    id: s.id,
-    submissionIds: s.submissions.map((s) => s.id),
-    ops,
-  };
 }
 
 async function fromDataset(
   s: ExpandedBenchmarkingSession,
   options?: ShardingOptions
-): Promise<Session | null> {
+): Promise<MPCTaskOp[] | null> {
   try {
     const dataset = s.datasetId ? await getDataset(s.datasetId) : null;
 
@@ -206,16 +127,10 @@ async function fromDataset(
     }
 
     // for each output dimension, perform MPC of kind "RANKING_DATASET"
-    const ops: Session["ops"] = dataset.dimensions.map((t) => ({
+    return dataset.dimensions.map((t) => ({
       c: options ? "RANKING_DATASET_DELEGATED" : "RANKING_DATASET",
       dataset: shardDataset(t.integerValues, options),
     }));
-
-    return {
-      id: s.id,
-      submissionIds: s.submissions.map((s) => s.id),
-      ops,
-    };
   } catch (error) {}
 
   return null;
@@ -243,126 +158,6 @@ function shardDataset(
   return res;
 }
 
-const interpreter = (session: Session) => async (jiff_instance: JIFFClient) => {
-  console.log("MPC Connected!", session);
-
-  const allSecrets = session.ops.map(async (op) => {
-    switch (op.c) {
-      case "RANKING": {
-        const secrets = await remerge_secrets(jiff_instance, op.submissions);
-        const secrets_sorted = mpc.sort(secrets);
-        return jiff_instance.open_array(mpc.ranking(secrets_sorted, secrets));
-      }
-      case "RANKING_DATASET": {
-        const {
-          referenceSecrets,
-          datasetSecrets,
-        } = await mpc.share_dataset_secrets(jiff_instance, op.dataset, 1, 2);
-        const res = await jiff_instance.open(
-          mpc.ranking_const(referenceSecrets[0], datasetSecrets)
-        );
-        return [res];
-      }
-      case "RANKING_DATASET_DELEGATED": {
-        const allSecrets = await jiff_instance.share_array(
-          op.dataset,
-          undefined,
-          undefined,
-          [1, 2]
-        );
-        const referenceSecret = allSecrets[3][0];
-        const rank = mpc.ranking_const(referenceSecret, allSecrets[1]);
-        const rankPublic = jiff_instance.reshare(
-          rank,
-          undefined,
-          [1, 2, 3],
-          [1, 2]
-        );
-
-        const res = await jiff_instance.open(rankPublic);
-        return [res];
-      }
-      case "FUNCTION_CALL": {
-        const secrets = await mpc.share_dataset_secrets(
-          jiff_instance,
-          op.transforms,
-          1,
-          2
-        );
-
-        const res = await jiff_instance.open(
-          mpc.dotproduct(secrets.datasetSecrets, secrets.referenceSecrets)
-        );
-        return [res];
-      }
-      case "DELEGATED_FUNCTION_CALL": {
-        const allSecrets = await jiff_instance.share_array(
-          op.transforms,
-          undefined,
-          undefined,
-          [1, 2]
-        );
-        const referenceInput = allSecrets[3];
-
-        const result = mpc.dotproduct(allSecrets[1], referenceInput);
-        const resultPublic = jiff_instance.reshare(
-          result,
-          undefined,
-          [1, 2, 3],
-          [1, 2]
-        );
-
-        const res = await jiff_instance.open(resultPublic);
-        return [res];
-      }
-    }
-  });
-
-  const allResults = await Promise.all(allSecrets);
-
-  console.log("allResults: ", allResults);
-
-  await logResults(session, rotate(allResults));
-
-  jiff_instance.disconnect(true, true);
-};
-
-function rotate(results: number[][]): number[][] {
-  const res = Array.from({ length: results[0].length }, () =>
-    Array.from({ length: results.length }, () => 0)
-  );
-
-  for (const dimensionId in results) {
-    for (const submissionId in results[dimensionId]) {
-      res[submissionId][dimensionId] = results[dimensionId][submissionId];
-    }
-  }
-
-  return res;
-}
-
-async function logResults(session: Session, resultsRotated: number[][]) {
-  const resultInserts: Prisma.ResultCreateWithoutSessionInput[] = session.submissionIds.map(
-    (sid, idx) => ({
-      integerResults: resultsRotated[idx],
-      submission: { connect: { id: sid } },
-    })
-  );
-  return prismaConnection().benchmarkingSession.update({
-    data: {
-      process: {
-        update: {
-          status: ProcessingStatus.FINISHED,
-        },
-      },
-      results: { create: resultInserts },
-    },
-    where: {
-      id: session.id,
-    },
-  });
-}
-
 async function getSession(sessionId: string) {
   return prismaConnection().benchmarkingSession.findUnique({
     include: {
@@ -376,10 +171,22 @@ async function getSession(sessionId: string) {
   });
 }
 
-async function startSession(sessionId: string) {
+async function enqueueTask(
+  coordinator: string,
+  qkind: QueueKind,
+  sessionId: string,
+  ops: MPCTaskOp[],
+  partyId: number,
+  partyCount: number
+) {
   return prismaConnection().processingQueue.create({
     data: {
-      status: ProcessingStatus.PROCESSING,
+      qkind,
+      status: ProcessingStatus.PENDING,
+      ops,
+      partyId,
+      partyCount,
+      coordinator,
       session: { connect: { id: sessionId } },
     },
   });
@@ -412,15 +219,3 @@ async function getDataset(datasetId: string): Promise<DatasetKV | null> {
     where: { id: datasetId },
   });
 }
-
-/*async function finishSession(sessionId: string) {
-  return prismaConnection().processingQueue.update({
-    data: {
-      status: ProcessingStatus.FINISHED,
-    },
-    where: {
-      sessionId,
-    },
-  });
-}
-*/

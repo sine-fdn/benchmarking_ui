@@ -10,7 +10,12 @@ generator client {
 
 enum ComputationKind {
     RANKING
+
+    RANKING_DATASET
+    RANKING_DATASET_DELEGATED
+
     FUNCTION_CALL
+    FUNCTION_CALL_DELEGATED
 
     @@map("computation_kind")
 }
@@ -23,8 +28,8 @@ model BenchmarkingSession {
     datasetId          String?           @map("dataset_id")
     numParties         Int               @map("num_parties")
     inputTitles        String[]          @map("input_titles")
-    inputComputations  ComputationKind[] @map("input_computations")
-    processorHostnames String[]          @map("processor_hostnames")
+    inputComputations  ComputationKind[] @map("input_computations") // drop me
+    processorHostnames String[]          @map("processor_hostnames") // drop me
 
     submissions Submission[]
     process     ProcessingQueue?
@@ -102,18 +107,32 @@ enum ProcessingStatus {
     @@map("processing_status")
 }
 
+enum QueueKind {
+    DATASET
+    OTHER
+
+    @@map("queue_kind")
+}
+
 model ProcessingQueue {
     id        Int       @id @default(autoincrement())
     createdAt DateTime  @default(now()) @map("created_at")
     updatedAt DateTime? @updatedAt @map("updated_at")
 
+    qkind     QueueKind
     session   BenchmarkingSession @relation(fields: [sessionId], references: [id])
     sessionId String              @unique @map("session_id")
 
     status ProcessingStatus @default(PENDING)
 
+    coordinator String
 
-    @@index([status, createdAt])
+    ops Json
+
+    partyId    Int @default(0) @map("party_id")
+    partyCount Int @default(2) @map("party_count")
+
+    @@index([qkind, status, createdAt])
     @@map("processing_queue")
 }
 
