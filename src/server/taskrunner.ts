@@ -1,4 +1,9 @@
-import { Prisma, PrismaClient, ProcessingStatus } from "@prisma/client";
+import {
+  Prisma,
+  PrismaClient,
+  ProcessingStatus,
+  QueueKind,
+} from "@prisma/client";
 import { Zp, mpc, SessionId } from "@sine-fdn/sine-ts";
 import * as dotenv from "dotenv";
 import { MPCTaskOp } from "./types";
@@ -10,9 +15,13 @@ const TIMED_WAIT = 500; // retry every 500ms
 const PROCESSING_TIMEOUT = Number(process.env.PROCESSING_TIMEOUT ?? "60000");
 const DEFAULT_COORDINATOR =
   process.env.COORDINATOR ?? "https://coordinator.benchmarking.sine.foundation";
-const CONCURRENCY = Math.max(1, Number(process.env.CONCURRENCY ?? "1"));
+const CONCURRENCY = Math.max(0, Number(process.env.CONCURRENCY ?? "1"));
+const DATASET_CONCURRENCY = Math.max(
+  0,
+  Number(process.env.DATASET_CONCURRENCY ?? "1")
+);
 
-type MPCTask = {
+interface MPCTask {
   id: SessionId;
   taskId: number;
   partyId: number;
@@ -20,34 +29,37 @@ type MPCTask = {
   coordinator: string;
   submissionIds: string[];
   ops: MPCTaskOp[];
-};
+}
 
-async function main() {
-  for await (const session of grabTask()) {
+async function main(qkind: QueueKind) {
+  for await (const task of grabTask(qkind)) {
     try {
-      await performTask(session);
+      console.log(`[${qkind}] executing task`, task);
+      await performTask(task);
     } catch (error) {
-      console.error("Update session to error", session, error);
-      await logErrorResult(session.taskId);
+      console.error("Update session to error", task, error);
+      await logErrorResult(task.taskId);
     }
   }
 }
 
-async function* grabTask() {
+async function* grabTask(qkind: QueueKind) {
   do {
-    const sessionIds = await CLIENT.$queryRaw<{ id: number }[]>(`
+    const sessionIds = await CLIENT.$queryRaw<{ id: number }[]>(
+      `
       UPDATE processing_queue
       SET status = 'PROCESSING'
         , updated_at = now()
       WHERE id = (
           SELECT id from processing_queue
-          WHERE status = 'PENDING'
+          WHERE status = 'PENDING' and qkind = '${qkind}'
           ORDER BY created_at, id
           FOR UPDATE SKIP LOCKED
           LIMIT 1
       )
       RETURNING id
-      `);
+      `
+    );
     if (sessionIds.length === 1) {
       yield await getSession(sessionIds[0].id);
     } else {
@@ -56,21 +68,21 @@ async function* grabTask() {
   } while (true);
 }
 
-async function performTask(s: MPCTask): Promise<number[][]> {
+async function performTask(task: MPCTask): Promise<number[][]> {
   return new Promise<number[][]>((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error("MPC Task Processing timeout")),
       PROCESSING_TIMEOUT
     );
     try {
-      console.log("MPC Task is starting...", s);
+      console.log("MPC Task is starting...", task);
       mpc.connect({
-        computationId: s.id,
-        hostname: s.coordinator,
-        party_id: s.partyId,
-        party_count: s.partyCount,
+        computationId: task.id,
+        hostname: task.coordinator,
+        party_id: task.partyId,
+        party_count: task.partyCount,
         Zp,
-        onConnect: interpreter(s, resolve, timer),
+        onConnect: interpreter(task, resolve, timer),
       });
     } catch (err) {
       console.error("MPC processing failed", err);
@@ -80,13 +92,13 @@ async function performTask(s: MPCTask): Promise<number[][]> {
 }
 
 const interpreter = (
-  session: MPCTask,
+  task: MPCTask,
   resolve: (result: number[][]) => void,
   timeout: NodeJS.Timeout
 ) => async (jiff_instance: JIFFClient) => {
-  console.log("MPC Connected!", session);
+  console.log("MPC Connected!", task);
 
-  const allSecrets = session.ops.map(async (op) => {
+  const allSecrets = task.ops.map(async (op) => {
     switch (op.c) {
       case "RANKING": {
         const secrets = await remerge_secrets(jiff_instance, op.submissions);
@@ -162,7 +174,7 @@ const interpreter = (
 
   console.log("allResults: ", allResults);
 
-  await logResults(session, rotate(allResults));
+  await logResults(task, rotate(allResults));
 
   jiff_instance.disconnect(true, true);
 
@@ -276,13 +288,20 @@ async function waitMS(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, TIMED_WAIT));
 }
 
-console.log(`Starting taskrunner with concurrency ${CONCURRENCY}`);
-Array.from({ length: CONCURRENCY }).map(() =>
-  main()
-    .catch((error) => {
-      console.error("task runner failed :/", error);
-    })
-    .then(() => {
-      process.exit(1);
-    })
+function parallelMain(numTasks: number, qkind: QueueKind) {
+  Array.from({ length: numTasks }).map(() =>
+    main(qkind)
+      .catch((error) => {
+        console.error(`[${qkind}] task runner failed :/`, error);
+      })
+      .then(() => {
+        process.exit(1);
+      })
+  );
+}
+
+console.log(
+  `Starting taskrunner with concurrency=${CONCURRENCY}, dataset_concurrency=${DATASET_CONCURRENCY}`
 );
+parallelMain(CONCURRENCY, QueueKind.OTHER);
+parallelMain(DATASET_CONCURRENCY, QueueKind.DATASET);

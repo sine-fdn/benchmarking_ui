@@ -1,6 +1,7 @@
 import {
   BenchmarkingSession,
   ProcessingStatus,
+  QueueKind,
   Submission,
 } from "@prisma/client";
 import { MPCTaskOp } from "../server/types";
@@ -27,6 +28,7 @@ export async function enqueueFunctionCall(
     },
   ];
   await enqueueTask(
+    QueueKind.OTHER,
     sessionId,
     ops,
     delegation === "FOLLOWER" ? 2 : 1,
@@ -56,7 +58,7 @@ export async function enqueueBenchmarkingAsLead(
 
   const party_id = PARTY_ID;
   const party_count = options ? 3 : 2;
-  await enqueueTask(sessionId, ops, party_id, party_count);
+  await enqueueTask(QueueKind.DATASET, sessionId, ops, party_id, party_count);
 }
 
 export async function enqueueJoinBenchmarking(sessionId: string) {
@@ -70,7 +72,7 @@ export async function enqueueJoinBenchmarking(sessionId: string) {
   const ops: MPCTaskOp[] = [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }];
   const party_id = PARTY_ID;
   const party_count = 3;
-  await enqueueTask(sessionId, ops, party_id, party_count); // let this crash in case a concurrent start happend
+  await enqueueTask(QueueKind.DATASET, sessionId, ops, party_id, party_count);
 }
 
 /* input data is organized by submitter ("horizontal")
@@ -146,6 +148,7 @@ async function getSession(sessionId: string) {
 }
 
 async function enqueueTask(
+  qkind: QueueKind,
   sessionId: string,
   ops: MPCTaskOp[],
   partyId: number,
@@ -153,6 +156,7 @@ async function enqueueTask(
 ) {
   return prismaConnection().processingQueue.create({
     data: {
+      qkind,
       status: ProcessingStatus.PENDING,
       ops,
       partyId,

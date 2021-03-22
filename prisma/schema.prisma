@@ -107,24 +107,32 @@ enum ProcessingStatus {
     @@map("processing_status")
 }
 
+enum QueueKind {
+    DATASET
+    OTHER
+
+    @@map("queue_kind")
+}
+
 model ProcessingQueue {
     id        Int       @id @default(autoincrement())
     createdAt DateTime  @default(now()) @map("created_at")
     updatedAt DateTime? @updatedAt @map("updated_at")
 
+    qkind     QueueKind
     session   BenchmarkingSession @relation(fields: [sessionId], references: [id])
     sessionId String              @unique @map("session_id")
 
     status ProcessingStatus @default(PENDING)
 
-    coordinator String?
+    coordinator String
 
-    ops Json?
+    ops Json
 
     partyId    Int @default(0) @map("party_id")
     partyCount Int @default(2) @map("party_count")
 
-    @@index([status, createdAt])
+    @@index([qkind, status, createdAt])
     @@map("processing_queue")
 }
 
