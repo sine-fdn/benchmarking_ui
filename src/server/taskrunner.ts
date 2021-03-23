@@ -140,6 +140,8 @@ const interpreter = (
         );
 
         const res = await jiff_instance.open(rankPublic);
+        jiff_instance.share(allSecrets[1].length, undefined, [3], [1, 2]);
+
         return [res];
       }
       case "FUNCTION_CALL": {

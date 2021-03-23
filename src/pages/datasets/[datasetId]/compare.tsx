@@ -1,6 +1,7 @@
 import {
   DatasetListingApiSuccessResponse,
   NewBenchmarkingSubmission,
+  BenchmarkingRank,
 } from "@sine-fdn/sine-ts";
 import { useRouter } from "next/router";
 import React, { useMemo, useState } from "react";
@@ -16,7 +17,7 @@ type ProcessingStatus =
   | { s: "LOADING_DATASET" }
   | { s: "NEEDS_INPUT" }
   | { s: "MPC_RUNNING" }
-  | { s: "FINISHED"; res: number[] }
+  | { s: "FINISHED"; res: BenchmarkingRank[] }
   | { s: "ERROR"; message: string };
 
 const NUM_SHARDS = 1;
@@ -108,7 +109,9 @@ export default function DatasetPage() {
               columns={["Dimension", "Rank"]}
               rows={s.res.map((rank, idx) => [
                 <span key={`${idx}-1`}>{dataset?.dimensions[idx]}</span>,
-                <span key={`${idx}-2`}>{rank}</span>,
+                <span key={`${idx}-2`}>
+                  {rank.rank} (Quantile: {rank.quantile})
+                </span>,
               ])}
             />
           )}
