@@ -34,7 +34,12 @@ declare class JIFFClient {
 
   party_count: number;
 
-  share(secret: number): { [party_id: string]: SecretShare };
+  share(
+    secret: number,
+    threshold?: number,
+    receivers_list?: number[],
+    senders_list?: number[]
+  ): { [party_id: string]: SecretShare };
   open(s: SecretShare, parties?: number[], op_id?: string): Promise<number>;
   share_array(
     secrets: number[],

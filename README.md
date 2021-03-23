@@ -10,7 +10,7 @@ COORDINATOR="http://localhost:8000"
 MPC_NODE_ID=1
 DELEGATED_UPSTREAM_HOST="http://localhost:3001"
 CONCURRENCY=5
-DATA_CONCURRENCY=1
+DATASET_CONCURRENCY=1
 ```
 
 The fields have the following meaning:
@@ -61,7 +61,7 @@ MPC_NODE_ID=1
 PORT=3000
 DELEGATED_UPSTREAM_HOST="http://localhost:3001"
 CONCURRENCY=5
-DATA_CONCURRENCY=1
+DATASET_CONCURRENCY=1
 ```
 
 as well as into `.env.production.node-2` the following contents
@@ -75,7 +75,7 @@ MPC_NODE_ID=2
 PORT=3001
 DELEGATED_UPSTREAM_HOST="http://localhost:3000"
 CONCURRENCY=5
-DATA_CONCURRENCY=1
+DATASET_CONCURRENCY=1
 ```
 
 ## Starting a local demo system
