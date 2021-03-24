@@ -20,7 +20,7 @@
   "dependencies": {
     "@hookform/resolvers": "^1.2.0",
     "@prisma/client": "^2.19.0",
-    "@sine-fdn/sine-ts": "github:sine-fdn/sine-ts#v0.7.0",
+    "@sine-fdn/sine-ts": "github:sine-fdn/sine-ts#v0.7.1",
     "bulma": "^0.9.1",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
