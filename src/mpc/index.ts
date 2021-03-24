@@ -34,7 +34,8 @@ export async function enqueueFunctionCall(
       transforms: inputMatrix,
     },
   ];
-  const coordinator = coordinator_ ?? nextCoordinator(qkind, COORDINATORS);
+  const coordinator =
+    coordinator_ ?? (await nextCoordinator(qkind, COORDINATORS));
   await enqueueTask(
     coordinator,
     qkind,
@@ -52,51 +53,66 @@ export async function enqueueBenchmarkingAsLead(
   sessionId: string,
   options?: ShardingOptions
 ): Promise<CoordinatorUrl> {
-  console.log("Enqueueing benchmarking session", sessionId, options);
+  try {
+    console.log("Enqueueing benchmarking session", sessionId, options);
 
-  const session = await getSession(sessionId);
-  if (!session) {
-    throw new Error("Failed to find session");
+    const session = await getSession(sessionId);
+    if (!session) {
+      throw new Error("Failed to find session");
+    }
+
+    const ops = session.datasetId
+      ? await fromDataset(session, options)
+      : verticalize(session);
+    if (!ops) {
+      throw new Error("Failed to construct session for interpreter");
+    }
+
+    const qkind = QueueKind.DATASET;
+    const party_id = PARTY_ID;
+    const party_count = options ? 3 : 2;
+    const coordinator = await nextCoordinator(qkind, COORDINATORS);
+    await enqueueTask(
+      coordinator,
+      qkind,
+      sessionId,
+      ops,
+      party_id,
+      party_count
+    );
+    return coordinator;
+  } catch (error) {
+    return Promise.reject(error);
   }
-
-  const ops = session.datasetId
-    ? await fromDataset(session, options)
-    : verticalize(session);
-  if (!ops) {
-    throw new Error("Failed to construct session for interpreter");
-  }
-
-  const qkind = QueueKind.DATASET;
-  const coordinator = nextCoordinator(qkind, COORDINATORS);
-  const party_id = PARTY_ID;
-  const party_count = options ? 3 : 2;
-  await enqueueTask(coordinator, qkind, sessionId, ops, party_id, party_count);
-  return coordinator;
 }
 
 export async function enqueueJoinBenchmarking(
   sessionId: string,
   coordinator: CoordinatorUrl
 ): Promise<string> {
-  console.log("Joining benchmarking session", sessionId);
+  try {
+    console.log("Joining benchmarking session", sessionId);
 
-  const session = await getSession(sessionId);
-  if (!session) {
-    throw new Error("Failed to find session");
+    const session = await getSession(sessionId);
+    if (!session) {
+      throw new Error("Failed to find session");
+    }
+
+    const ops: MPCTaskOp[] = [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }];
+    const party_id = PARTY_ID;
+    const party_count = 3;
+    await enqueueTask(
+      coordinator,
+      QueueKind.DATASET,
+      sessionId,
+      ops,
+      party_id,
+      party_count
+    );
+    return coordinator;
+  } catch (error) {
+    return Promise.reject(error);
   }
-
-  const ops: MPCTaskOp[] = [{ c: "RANKING_DATASET_DELEGATED", dataset: [] }];
-  const party_id = PARTY_ID;
-  const party_count = 3;
-  await enqueueTask(
-    coordinator,
-    QueueKind.DATASET,
-    sessionId,
-    ops,
-    party_id,
-    party_count
-  );
-  return coordinator;
 }
 
 /* input data is organized by submitter ("horizontal")
@@ -152,8 +168,6 @@ function shardDataset(
   ) {
     res.push(integerValues[idx]);
   }
-
-  console.log("shard dataset", res, integerValues);
 
   return res;
 }
