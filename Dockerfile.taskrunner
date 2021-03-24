@@ -1,0 +1,15 @@
+FROM mhart/alpine-node:14
+
+RUN mkdir /taskrunner
+
+COPY ./ /taskrunner
+
+WORKDIR /taskrunner
+
+RUN yarn install && yarn build
+
+ENV CONCURRENCY="10"
+ENV DATASET_CONCURRENCY="1"
+ENV DATABASE_URL="postgresql://username:password@hostname:5432/db?schema=public"
+
+CMD ["node",".next/production-server/taskrunner.js"]
