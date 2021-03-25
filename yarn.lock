@@ -207,10 +207,11 @@
   resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-2.19.0-39.c1455d0b443d66b0d9db9bcb1bb9ee0d5bbc511d.tgz#db2809a6f7f18584e3ca89b1f5bad884155629ec"
   integrity sha512-rEWpaG7wZvPuWJC5SwkBB/Iwue//oC5yv58Mse7r+ibtgkA7vGdWc1bFDQ32DT9tDL5WSC6bBwqEASGV/1Gm1Q==
 
-"@sine-fdn/sine-ts@github:sine-fdn/sine-ts#v0.7.2":
+"@sine-fdn/sine-ts@github:sine-fdn/sine-ts#biginteger":
   version "0.7.2"
-  resolved "https://codeload.github.com/sine-fdn/sine-ts/tar.gz/4f85a848045bec1e8e1d3588fbe887a7eab22e56"
+  resolved "https://codeload.github.com/sine-fdn/sine-ts/tar.gz/7d79c5981722cbe0cb6a1e8359d7754cd4b423e2"
   dependencies:
+    bignumber.js "^9.0.1"
     jiff-mpc "github:multiparty/jiff#2fc9231b45a497196c9d636964810e8a2f23d705"
 
 "@types/body-parser@*":
@@ -903,6 +904,11 @@ bignumber.js@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-5.0.0.tgz#fbce63f09776b3000a83185badcde525daf34833"
   integrity sha512-KWTu6ZMVk9sxlDJQh2YH1UOnfDP8O8TpxUxgQG/vKASoSnEjK9aVuOueFaPcQEYQ5fyNXNTOYwYw3099RYebWg==
+
+bignumber.js@^9.0.1:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.0.1.tgz#8d7ba124c882bfd8e43260c67475518d0689e4e5"
+  integrity sha512-IdZR9mh6ahOBv/hYGiXyVuyCetmGJhtYkqLBpTStdhEGjegpPlUawydyaF3pbIOFynJTpllEs+NP+CS9jKFLjA==
 
 binary-extensions@^1.0.0:
   version "1.13.1"
