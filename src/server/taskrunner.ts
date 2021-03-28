@@ -5,6 +5,7 @@ import {
   QueueKind,
 } from "@prisma/client";
 import { Zp, mpc, SessionId } from "@sine-fdn/sine-ts";
+import BigNumber from "bignumber.js";
 import * as dotenv from "dotenv";
 import { MPCTaskOp } from "./types";
 
@@ -91,6 +92,7 @@ async function performTask(task: MPCTask): Promise<number[][]> {
         party_count: task.partyCount,
         Zp,
         onConnect: interpreter(task, resolve, timer),
+        bignum: require("jiff-mpc/lib/ext/jiff-client-bignumber"),
       });
     } catch (err) {
       console.error("MPC processing failed", err);
@@ -111,21 +113,23 @@ const interpreter = (
       case "RANKING": {
         const secrets = await remerge_secrets(jiff_instance, op.submissions);
         const secrets_sorted = mpc.sort(secrets);
-        return jiff_instance.open_array(mpc.ranking(secrets_sorted, secrets));
+        return jiff_instance
+          .open_array(mpc.ranking(secrets_sorted, secrets))
+          .then((d: BigNumber[]) => d.map((di) => di.toNumber()));
       }
       case "RANKING_DATASET": {
         const {
           referenceSecrets,
           datasetSecrets,
         } = await mpc.share_dataset_secrets(jiff_instance, op.dataset, 1, 2);
-        const res = await jiff_instance.open(
-          mpc.ranking_const(referenceSecrets[0], datasetSecrets)
-        );
+        const res = await jiff_instance
+          .open(mpc.ranking_const(referenceSecrets[0], datasetSecrets))
+          .then((d: BigNumber) => d.toNumber());
         return [res];
       }
       case "RANKING_DATASET_DELEGATED": {
         const allSecrets = await jiff_instance.share_array(
-          op.dataset,
+          op.dataset.map((i) => new BigNumber(i)),
           undefined,
           undefined,
           [1, 2]
@@ -139,8 +143,15 @@ const interpreter = (
           [1, 2]
         );
 
-        const res = await jiff_instance.open(rankPublic);
-        jiff_instance.share(allSecrets[1].length, undefined, [3], [1, 2]);
+        const res = await jiff_instance
+          .open(rankPublic)
+          .then((d: BigNumber) => d.toNumber());
+        jiff_instance.share(
+          new BigNumber(allSecrets[1].length),
+          undefined,
+          [3],
+          [1, 2]
+        );
 
         return [res];
       }
@@ -152,14 +163,16 @@ const interpreter = (
           2
         );
 
-        const res = await jiff_instance.open(
-          mpc.dotproduct(secrets.datasetSecrets, secrets.referenceSecrets)
-        );
+        const res = await jiff_instance
+          .open(
+            mpc.dotproduct(secrets.datasetSecrets, secrets.referenceSecrets)
+          )
+          .then((d: BigNumber) => d.toNumber());
         return [res];
       }
       case "FUNCTION_CALL_DELEGATED": {
         const allSecrets = await jiff_instance.share_array(
-          op.transforms,
+          op.transforms.map((t) => new BigNumber(t)),
           undefined,
           undefined,
           [1, 2]
@@ -174,7 +187,9 @@ const interpreter = (
           [1, 2]
         );
 
-        const res = await jiff_instance.open(resultPublic);
+        const res = await jiff_instance
+          .open(resultPublic)
+          .then((d: BigNumber) => d.toNumber());
         return [res];
       }
     }
@@ -197,14 +212,14 @@ async function remerge_secrets(
   my_secrets: number[]
 ): Promise<SecretShare[]> {
   const all_secrets = await jiff_instance.share_array(
-    my_secrets,
+    my_secrets.map((s) => new BigNumber(s)),
     my_secrets.length
   );
 
   const secret_values = all_secrets[1];
   for (let secret = 0; secret < secret_values.length; ++secret) {
     for (let node = 2; node <= jiff_instance.party_count; ++node) {
-      secret_values[secret] = secret_values[secret].add(
+      secret_values[secret] = secret_values[secret].sadd(
         all_secrets[node][secret]
       );
     }

@@ -6,13 +6,15 @@
 import JIFFServer from "jiff-mpc";
 import express from "express";
 import http from "http";
+import bignumExt from "jiff-mpc/lib/ext/jiff-server-bignumber.js";
 
 const PORT = Number(process.env.PORT) || 8080;
 
 const app = express();
 const httpServer = new http.Server(app);
 
-new JIFFServer(httpServer, { logs: false });
+const jserv = new JIFFServer(httpServer, { logs: false });
+jserv.apply_extension(bignumExt);
 
 httpServer.listen(PORT, function () {
   console.log(`Listening on *:${PORT}`);
