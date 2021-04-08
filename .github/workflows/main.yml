@@ -50,7 +50,7 @@ jobs:
         with:
           file: Dockerfile
           push: true
-          tags: sine-fdn/benchmarking_ui/backend:${{ github.sha }}
+          tags: ghcr.io/sine-fdn/benchmarking_ui/backend:${{ github.sha }}
 
       - name: Backend Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
@@ -61,7 +61,7 @@ jobs:
         with:
           file: Dockerfile.taskrunner
           push: true
-          tags: sine-fdn/benchmarking_ui/taskrunner:${{ github.sha }}
+          tags: ghcr.io/sine-fdn/benchmarking_ui/taskrunner:${{ github.sha }}
 
       - name: Taskrunner Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
