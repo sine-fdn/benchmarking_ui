@@ -207,9 +207,9 @@
   resolved "https://registry.yarnpkg.com/@prisma/engines/-/engines-2.19.0-39.c1455d0b443d66b0d9db9bcb1bb9ee0d5bbc511d.tgz#db2809a6f7f18584e3ca89b1f5bad884155629ec"
   integrity sha512-rEWpaG7wZvPuWJC5SwkBB/Iwue//oC5yv58Mse7r+ibtgkA7vGdWc1bFDQ32DT9tDL5WSC6bBwqEASGV/1Gm1Q==
 
-"@sine-fdn/sine-ts@github:sine-fdn/sine-ts#0.8.1":
-  version "0.8.1"
-  resolved "https://codeload.github.com/sine-fdn/sine-ts/tar.gz/51989e14da7ecf32de6115f4ff2d6890fa943040"
+"@sine-fdn/sine-ts@github:sine-fdn/sine-ts#0.8.3":
+  version "0.8.3"
+  resolved "https://codeload.github.com/sine-fdn/sine-ts/tar.gz/9fe01eb3c1292036db68fd1007ba3a1043a8b7aa"
   dependencies:
     bignumber.js "^9.0.1"
     jiff-mpc "github:multiparty/jiff#2fc9231b45a497196c9d636964810e8a2f23d705"
