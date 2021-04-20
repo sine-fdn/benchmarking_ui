@@ -1,19 +1,9 @@
-# Basic Configuration
+# Benchmarking 
 
-Create a .env file like this:
+## Node Configuration
 
-```
-DATABASE_URL="postgresql://$dbuser$:$dbpass$@$dbhost$:$dbport$/$db_name$?schema=public"
-PROCESSOR_HOSTNAMES="http://localhost:3000,http://localhost:3001"
-UPSTREAM_HOSTNAMES="http://localhost:3000,http://localhost:3001"
-COORDINATOR="http://localhost:8000"
-MPC_NODE_ID=1
-DELEGATED_UPSTREAM_HOST="http://localhost:3001"
-CONCURRENCY=5
-DATASET_CONCURRENCY=1
-```
-
-The fields have the following meaning:
+Nodes can be configured with .env files:
+The environment variables have the following meaning:
 
 - `PROCESSOR_HOSTNAMES`: list of benchmarking API endpoints accepting benchmarking data
 - `UPSTREAM_HOSTNAMES`: list of hosts the current host will contact to retrieve session information from
@@ -26,6 +16,13 @@ The fields have the following meaning:
 ## Example set up
 
 We will run 2 nodes (hence 2 entries for `PROCESSOR_HOSTNAMES`) which we will boostrap locally in a minimal fashion now. For this we only need to create the necessary tables @ Postgres and then start the nodes.
+
+### Yarn install 
+
+First of all: install dependencies. 
+run `yarn install`
+
+This will also make prisma available. 
 
 ### DB Setup
 
@@ -46,7 +43,7 @@ DATABASE_URL="postgresql://benchmarking_demo:test123@localhost:5432/ \
 benchmarking_demo?schema=node2" yarn prisma migrate deploy  --preview-feature
 ```
 
-## Node setup
+### Node setup
 
 Now we only need to set up the .env files for Nextjs.
 
@@ -78,10 +75,26 @@ CONCURRENCY=5
 DATASET_CONCURRENCY=1
 ```
 
-## Starting a local demo system
+### Starting a local demo system
 
 To start the system:
 
 ```sh
 yarn local-demo
 ```
+
+### add test data
+
+connect to 
+ 
+```sql 
+begin; insert into node1.datasets (id, input_dimensions) values('felix', ARRAY['co2']); insert into node1.dataset_dimensions (dataset_id, name, integer_values) values('felix', 'co2', array[100,1000,10000,100000]); commit;
+```
+
+### try it out
+
+navigate to `localhost:3000`
+
+## docker setup
+In the root of the repository, run `docker-compose up`. 
+This will build a docker container according to the `./Dockerfile` and start it along with postgresql. 

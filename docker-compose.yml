@@ -1,0 +1,23 @@
+version: "2.1"
+services: 
+  taskrunner1: 
+    build: . # it may be nicer to have nodes and taskrunners in spearate docker containers and compose them here
+    depends_on: 
+      - postgres
+    ports:
+      - 3000:3000
+    environment: 
+      DATABASE_URL: "postgresql://benchmarking_demo:test123@postgres:5432/benchmarking_demo?schema=node1"
+      MPC_NODE_ID: 1
+      PORT: 3000
+      CONCURRENCY: 5
+      DATASET_CONCURRENCY: 1
+
+  postgres: 
+    image: postgres:latest
+    environment: 
+      POSTGRES_USER: benchmarking_demo
+      POSTGRES_PASSWORD: test123
+    ports: 
+      - 5433:5432
+

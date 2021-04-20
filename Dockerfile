@@ -1,11 +1,11 @@
 FROM mhart/alpine-node:14
 
-RUN mkdir /benchmarking
+RUN mkdir /taskrunner
 
-COPY . /benchmarking
+COPY ./ /taskrunner
 
-WORKDIR /benchmarking
+WORKDIR /taskrunner
 
 RUN yarn install && yarn build
 
-CMD ["node",".next/production-server/index.js"]
+ENTRYPOINT ./startup.sh 
